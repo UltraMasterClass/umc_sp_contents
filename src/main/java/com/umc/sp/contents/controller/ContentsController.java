@@ -23,7 +23,7 @@ public class ContentsController {
 
     private final Clock clock;
 
-    @RequestMapping(value = "/video", method = RequestMethod.GET,produces = "application/json")
+    @RequestMapping(value = "/content", method = RequestMethod.GET,produces = "application/json")
     public ResponseEntity<Map<String, Object>> findUmcVideo() {
         log.info("Starting Content Administration....");
 
@@ -31,7 +31,7 @@ public class ContentsController {
         response.put("timeStamp", LocalDateTime.now(clock).format(DateTimeFormatter.ISO_DATE_TIME));
         response.put("status", "OK");
         response.put("content_id", "b8ef44b4-b49b-48d8-8d21-493cb1adb9ba");
-        response.put("message", "Video  operations  successfully");
+        response.put("message", "Content  operations  successfully");
 
         log.info("Finishing Content Administration....");
         return new ResponseEntity<>(response, HttpStatus.OK);

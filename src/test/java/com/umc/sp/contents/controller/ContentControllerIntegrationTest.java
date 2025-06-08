@@ -26,7 +26,7 @@ public class ContentControllerIntegrationTest implements IntegrationTest{
         var expected = new HashMap<>();
         expected.put("timeStamp", LocalDateTime.now(clock).format(DateTimeFormatter.ISO_DATE_TIME));
         expected.put("status", "OK");
-        expected.put("user_id", "c4d87e59-7507-44d8-963e-ec39a64d246d");
+        expected.put("content_id", "b8ef44b4-b49b-48d8-8d21-493cb1adb9ba");
         expected.put("message", "Content  operations  successfully");
 
         //when
