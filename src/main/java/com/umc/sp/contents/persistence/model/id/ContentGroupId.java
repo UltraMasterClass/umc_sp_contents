@@ -2,9 +2,9 @@ package com.umc.sp.contents.persistence.model.id;
 
 import java.io.Serializable;
 import java.util.UUID;
-import lombok.EqualsAndHashCode;
+import lombok.Data;
 
-@EqualsAndHashCode
+@Data
 public class ContentGroupId implements Serializable {
     private UUID contentId;
     private UUID groupId;

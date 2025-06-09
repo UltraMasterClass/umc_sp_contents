@@ -1,10 +1,10 @@
 package com.umc.sp.contents.persistence.repository;
 
 import com.umc.sp.contents.IntegrationTest;
-import com.umc.sp.contents.persistence.model.Genero;
+import com.umc.sp.contents.persistence.model.Genders;
 import com.umc.sp.contents.persistence.model.Group;
 import com.umc.sp.contents.persistence.model.id.CategoryId;
-import com.umc.sp.contents.persistence.model.id.GeneroId;
+import com.umc.sp.contents.persistence.model.id.GenderId;
 import com.umc.sp.contents.persistence.model.id.GroupId;
 import com.umc.sp.contents.persistence.model.type.GroupType;
 import java.util.UUID;
@@ -14,13 +14,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class GroupRepositoryIntegrationTest implements IntegrationTest {
+public class GroupsRepositoryIntegrationTest implements IntegrationTest {
 
     @Autowired
-    private GroupRepository groupRepository;
+    private GroupsRepository groupsRepository;
 
     @Autowired
-    private GenerosRepository generosRepository;
+    private GendersRepository gendersRepository;
 
     @BeforeEach
     void setUp() {
@@ -29,18 +29,18 @@ public class GroupRepositoryIntegrationTest implements IntegrationTest {
 
     @AfterEach
     void cleanUp() {
-        groupRepository.deleteAll();
-        generosRepository.deleteAll();
+        groupsRepository.deleteAll();
+        gendersRepository.deleteAll();
     }
 
     @Test
     void shouldSaveAndFindById() {
         //given
-        var genero = generosRepository.save(Genero.builder()
-                                                  .id(new GeneroId())
-                                                  .code(UUID.randomUUID().toString())
-                                                  .description(UUID.randomUUID().toString())
-                                                  .build());
+        var genero = gendersRepository.save(Genders.builder()
+                                                   .id(new GenderId())
+                                                   .code(UUID.randomUUID().toString())
+                                                   .description(UUID.randomUUID().toString())
+                                                   .build());
         var group = Group.builder()
                          .id(new GroupId())
                          .type(GroupType.SERIES)
@@ -48,14 +48,14 @@ public class GroupRepositoryIntegrationTest implements IntegrationTest {
                          .featured(true)
                          .name(UUID.randomUUID().toString())
                          .description(UUID.randomUUID().toString())
-                         .genero(genero)
+                         .genders(genero)
                          .episodes(4)
                          .duration("1:30:00")
                          .build();
 
         //when
-        var saved = groupRepository.save(group);
-        var result = groupRepository.findById(group.getId());
+        var saved = groupsRepository.save(group);
+        var result = groupsRepository.findById(group.getId());
 
         //then
         Assertions.assertThat(result).get().isEqualTo(saved);

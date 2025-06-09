@@ -13,20 +13,20 @@ import static java.util.Objects.nonNull;
 @Getter
 @EqualsAndHashCode
 @RequiredArgsConstructor
-public class GeneroId implements Serializable, Comparable<GeneroId> {
+public class GenderId implements Serializable, Comparable<GenderId> {
 
     private final UUID id;
 
-    public GeneroId() {
+    public GenderId() {
         id = UUID.randomUUID();
     }
 
-    public GeneroId(String id) {
+    public GenderId(String id) {
         this.id = UUID.fromString(id);
     }
 
     @Override
-    public int compareTo(GeneroId other) {
+    public int compareTo(GenderId other) {
         return other == null ? -1 : new CompareToBuilder().append(id, other.id).toComparison();
     }
 
@@ -36,16 +36,16 @@ public class GeneroId implements Serializable, Comparable<GeneroId> {
     }
 
     @Converter
-    public static class DbConverter implements AttributeConverter<GeneroId, UUID> {
+    public static class DbConverter implements AttributeConverter<GenderId, UUID> {
 
         @Override
-        public UUID convertToDatabaseColumn(GeneroId id) {
+        public UUID convertToDatabaseColumn(GenderId id) {
             return nonNull(id) ? id.getId() : null;
         }
 
         @Override
-        public GeneroId convertToEntityAttribute(UUID value) {
-            return nonNull(value) ? new GeneroId(value) : null;
+        public GenderId convertToEntityAttribute(UUID value) {
+            return nonNull(value) ? new GenderId(value) : null;
         }
     }
 }

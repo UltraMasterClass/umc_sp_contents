@@ -2,9 +2,10 @@ package com.umc.sp.contents.persistence.model.id;
 
 import java.io.Serializable;
 import java.util.UUID;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-@EqualsAndHashCode
+@Data
 public class SubscriptionPlanUserId implements Serializable {
     private UUID subscriptionPlanId;
     private UUID userId;

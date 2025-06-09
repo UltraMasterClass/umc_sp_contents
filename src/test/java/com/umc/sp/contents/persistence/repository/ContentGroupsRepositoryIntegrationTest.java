@@ -4,12 +4,12 @@ import com.umc.sp.contents.IntegrationTest;
 import com.umc.sp.contents.persistence.model.Category;
 import com.umc.sp.contents.persistence.model.Content;
 import com.umc.sp.contents.persistence.model.ContentGroup;
-import com.umc.sp.contents.persistence.model.Genero;
+import com.umc.sp.contents.persistence.model.Genders;
 import com.umc.sp.contents.persistence.model.Group;
 import com.umc.sp.contents.persistence.model.id.CategoryId;
 import com.umc.sp.contents.persistence.model.id.ContentGroupId;
 import com.umc.sp.contents.persistence.model.id.ContentId;
-import com.umc.sp.contents.persistence.model.id.GeneroId;
+import com.umc.sp.contents.persistence.model.id.GenderId;
 import com.umc.sp.contents.persistence.model.id.GroupId;
 import com.umc.sp.contents.persistence.model.type.ContentType;
 import com.umc.sp.contents.persistence.model.type.GroupType;
@@ -24,16 +24,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import static com.umc.sp.contents.persistence.model.type.CategoryType.TOPIC;
 
-public class ContentGroupRepositoryIntegrationTest implements IntegrationTest {
+public class ContentGroupsRepositoryIntegrationTest implements IntegrationTest {
 
     @Autowired
     private ContentGroupRepository contentGroupRepository;
 
     @Autowired
-    private GroupRepository groupRepository;
+    private GroupsRepository groupsRepository;
 
     @Autowired
-    private GenerosRepository generosRepository;
+    private GendersRepository gendersRepository;
 
     @Autowired
     private ContentRepository contentRepository;
@@ -53,9 +53,9 @@ public class ContentGroupRepositoryIntegrationTest implements IntegrationTest {
     @AfterEach
     void cleanUp() {
         contentGroupRepository.deleteAll();
-        groupRepository.deleteAll();
+        groupsRepository.deleteAll();
         contentRepository.deleteAll();
-        generosRepository.deleteAll();
+        gendersRepository.deleteAll();
         categoriesRepository.deleteAll();
 
     }
@@ -69,22 +69,22 @@ public class ContentGroupRepositoryIntegrationTest implements IntegrationTest {
                                                          .description(UUID.randomUUID().toString())
                                                          .code(UUID.randomUUID().toString())
                                                          .build());
-        var genero = generosRepository.save(Genero.builder()
-                                                  .id(new GeneroId())
-                                                  .code(UUID.randomUUID().toString())
-                                                  .description(UUID.randomUUID().toString())
-                                                  .build());
-        var group = groupRepository.save(Group.builder()
-                                              .id(new GroupId())
-                                              .type(GroupType.SERIES)
-                                              .categoryId(new CategoryId())
-                                              .featured(true)
-                                              .name(UUID.randomUUID().toString())
-                                              .description(UUID.randomUUID().toString())
-                                              .genero(genero)
-                                              .episodes(4)
-                                              .duration("1:30:00")
-                                              .build());
+        var genero = gendersRepository.save(Genders.builder()
+                                                   .id(new GenderId())
+                                                   .code(UUID.randomUUID().toString())
+                                                   .description(UUID.randomUUID().toString())
+                                                   .build());
+        var group = groupsRepository.save(Group.builder()
+                                               .id(new GroupId())
+                                               .type(GroupType.SERIES)
+                                               .categoryId(new CategoryId())
+                                               .featured(true)
+                                               .name(UUID.randomUUID().toString())
+                                               .description(UUID.randomUUID().toString())
+                                               .genders(genero)
+                                               .episodes(4)
+                                               .duration("1:30:00")
+                                               .build());
 
         var content = contentRepository.save(Content.builder()
                                                     .id(new ContentId())
@@ -93,7 +93,7 @@ public class ContentGroupRepositoryIntegrationTest implements IntegrationTest {
                                                     .category(category)
                                                     .name(UUID.randomUUID().toString())
                                                     .description(UUID.randomUUID().toString())
-                                                    .genero(genero)
+                                                    .genders(genero)
                                                     .especialidadId(UUID.randomUUID())
                                                     .resourceUrl(UUID.randomUUID().toString())
                                                     .cdnUrl(UUID.randomUUID().toString())

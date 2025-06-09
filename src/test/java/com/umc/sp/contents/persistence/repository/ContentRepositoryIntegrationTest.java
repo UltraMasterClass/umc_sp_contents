@@ -3,10 +3,10 @@ package com.umc.sp.contents.persistence.repository;
 import com.umc.sp.contents.IntegrationTest;
 import com.umc.sp.contents.persistence.model.Category;
 import com.umc.sp.contents.persistence.model.Content;
-import com.umc.sp.contents.persistence.model.Genero;
+import com.umc.sp.contents.persistence.model.Genders;
 import com.umc.sp.contents.persistence.model.id.CategoryId;
 import com.umc.sp.contents.persistence.model.id.ContentId;
-import com.umc.sp.contents.persistence.model.id.GeneroId;
+import com.umc.sp.contents.persistence.model.id.GenderId;
 import com.umc.sp.contents.persistence.model.type.ContentType;
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -27,7 +27,7 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
     private CategoriesRepository categoriesRepository;
 
     @Autowired
-    private GenerosRepository generosRepository;
+    private GendersRepository gendersRepository;
 
     @Autowired
     private Clock clock;
@@ -40,7 +40,7 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
     @AfterEach
     void cleanUp() {
         contentRepository.deleteAll();
-        generosRepository.deleteAll();
+        gendersRepository.deleteAll();
         categoriesRepository.deleteAll();
     }
 
@@ -48,7 +48,7 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
     void shouldSaveAndFindById() {
         //given
         var category = categoriesRepository.save(Category.builder().id(new CategoryId()).type(TOPIC).description(UUID.randomUUID().toString()).code(UUID.randomUUID().toString()).build());
-        var genero = generosRepository.save(Genero.builder().id(new GeneroId()).code(UUID.randomUUID().toString()).description(UUID.randomUUID().toString()).build());
+        var genero = gendersRepository.save(Genders.builder().id(new GenderId()).code(UUID.randomUUID().toString()).description(UUID.randomUUID().toString()).build());
 
         //when
         var content = Content.builder().id(new ContentId())
@@ -57,7 +57,7 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
                              .category(category)
                              .name(UUID.randomUUID().toString())
                              .description(UUID.randomUUID().toString())
-                             .genero(genero)
+                             .genders(genero)
                              .especialidadId(UUID.randomUUID())
                              .resourceUrl(UUID.randomUUID().toString())
                              .cdnUrl(UUID.randomUUID().toString())

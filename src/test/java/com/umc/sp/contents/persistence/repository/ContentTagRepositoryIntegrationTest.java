@@ -4,12 +4,12 @@ import com.umc.sp.contents.IntegrationTest;
 import com.umc.sp.contents.persistence.model.Category;
 import com.umc.sp.contents.persistence.model.Content;
 import com.umc.sp.contents.persistence.model.ContentTag;
-import com.umc.sp.contents.persistence.model.Genero;
+import com.umc.sp.contents.persistence.model.Genders;
 import com.umc.sp.contents.persistence.model.Tag;
 import com.umc.sp.contents.persistence.model.id.CategoryId;
 import com.umc.sp.contents.persistence.model.id.ContentId;
 import com.umc.sp.contents.persistence.model.id.ContentTagId;
-import com.umc.sp.contents.persistence.model.id.GeneroId;
+import com.umc.sp.contents.persistence.model.id.GenderId;
 import com.umc.sp.contents.persistence.model.id.TagId;
 import com.umc.sp.contents.persistence.model.type.ContentType;
 import java.math.BigDecimal;
@@ -35,7 +35,7 @@ public class ContentTagRepositoryIntegrationTest implements IntegrationTest {
     private CategoriesRepository categoriesRepository;
 
     @Autowired
-    private GenerosRepository generosRepository;
+    private GendersRepository gendersRepository;
 
     @Autowired
     private TagsRepository tagsRepository;
@@ -52,7 +52,7 @@ public class ContentTagRepositoryIntegrationTest implements IntegrationTest {
     void cleanUp() {
         contentTagRepository.deleteAll();
         contentRepository.deleteAll();
-        generosRepository.deleteAll();
+        gendersRepository.deleteAll();
         categoriesRepository.deleteAll();
         tagsRepository.deleteAll();
     }
@@ -67,11 +67,11 @@ public class ContentTagRepositoryIntegrationTest implements IntegrationTest {
                                                          .description(UUID.randomUUID().toString())
                                                          .code(UUID.randomUUID().toString())
                                                          .build());
-        var genero = generosRepository.save(Genero.builder()
-                                                  .id(new GeneroId())
-                                                  .code(UUID.randomUUID().toString())
-                                                  .description(UUID.randomUUID().toString())
-                                                  .build());
+        var genero = gendersRepository.save(Genders.builder()
+                                                   .id(new GenderId())
+                                                   .code(UUID.randomUUID().toString())
+                                                   .description(UUID.randomUUID().toString())
+                                                   .build());
         var content = contentRepository.save(Content.builder()
                                                     .id(new ContentId())
                                                     .featured(true)
@@ -79,7 +79,7 @@ public class ContentTagRepositoryIntegrationTest implements IntegrationTest {
                                                     .category(category)
                                                     .name(UUID.randomUUID().toString())
                                                     .description(UUID.randomUUID().toString())
-                                                    .genero(genero)
+                                                    .genders(genero)
                                                     .especialidadId(UUID.randomUUID())
                                                     .resourceUrl(UUID.randomUUID().toString())
                                                     .cdnUrl(UUID.randomUUID().toString())

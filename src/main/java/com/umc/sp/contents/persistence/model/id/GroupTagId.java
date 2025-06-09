@@ -2,9 +2,9 @@ package com.umc.sp.contents.persistence.model.id;
 
 import java.io.Serializable;
 import java.util.UUID;
-import lombok.EqualsAndHashCode;
+import lombok.Data;
 
-@EqualsAndHashCode
+@Data
 public class GroupTagId implements Serializable {
     private UUID groupId;
     private UUID tagId;

@@ -1,12 +1,12 @@
 package com.umc.sp.contents.persistence.repository;
 
 import com.umc.sp.contents.IntegrationTest;
-import com.umc.sp.contents.persistence.model.Genero;
+import com.umc.sp.contents.persistence.model.Genders;
 import com.umc.sp.contents.persistence.model.Group;
 import com.umc.sp.contents.persistence.model.GroupTag;
 import com.umc.sp.contents.persistence.model.Tag;
 import com.umc.sp.contents.persistence.model.id.CategoryId;
-import com.umc.sp.contents.persistence.model.id.GeneroId;
+import com.umc.sp.contents.persistence.model.id.GenderId;
 import com.umc.sp.contents.persistence.model.id.GroupId;
 import com.umc.sp.contents.persistence.model.id.GroupTagId;
 import com.umc.sp.contents.persistence.model.id.TagId;
@@ -26,10 +26,10 @@ public class GroupTagsRepositoryIntegrationTest implements IntegrationTest {
     private GroupTagsRepository groupTagsRepository;
 
     @Autowired
-    private GroupRepository groupRepository;
+    private GroupsRepository groupsRepository;
 
     @Autowired
-    private GenerosRepository generosRepository;
+    private GendersRepository gendersRepository;
 
     @Autowired
     private TagsRepository tagsRepository;
@@ -45,8 +45,8 @@ public class GroupTagsRepositoryIntegrationTest implements IntegrationTest {
     @AfterEach
     void cleanUp() {
         groupTagsRepository.deleteAll();
-        groupRepository.deleteAll();
-        generosRepository.deleteAll();
+        groupsRepository.deleteAll();
+        gendersRepository.deleteAll();
         tagsRepository.deleteAll();
     }
 
@@ -54,22 +54,22 @@ public class GroupTagsRepositoryIntegrationTest implements IntegrationTest {
     void shouldSaveAndFindById() {
         //given
         var tag = tagsRepository.save(Tag.builder().id(new TagId()).code(UUID.randomUUID().toString()).description(UUID.randomUUID().toString()).build());
-        var genero = generosRepository.save(Genero.builder()
-                                                  .id(new GeneroId())
-                                                  .code(UUID.randomUUID().toString())
-                                                  .description(UUID.randomUUID().toString())
-                                                  .build());
-        var group = groupRepository.save(Group.builder()
-                                              .id(new GroupId())
-                                              .type(GroupType.SERIES)
-                                              .categoryId(new CategoryId())
-                                              .featured(true)
-                                              .name(UUID.randomUUID().toString())
-                                              .description(UUID.randomUUID().toString())
-                                              .genero(genero)
-                                              .episodes(4)
-                                              .duration("1:30:00")
-                                              .build());
+        var genero = gendersRepository.save(Genders.builder()
+                                                   .id(new GenderId())
+                                                   .code(UUID.randomUUID().toString())
+                                                   .description(UUID.randomUUID().toString())
+                                                   .build());
+        var group = groupsRepository.save(Group.builder()
+                                               .id(new GroupId())
+                                               .type(GroupType.SERIES)
+                                               .categoryId(new CategoryId())
+                                               .featured(true)
+                                               .name(UUID.randomUUID().toString())
+                                               .description(UUID.randomUUID().toString())
+                                               .genders(genero)
+                                               .episodes(4)
+                                               .duration("1:30:00")
+                                               .build());
 
         var groupTag = GroupTag.builder().id(new GroupTagId(group.getId().getId(), tag.getId().getId())).disableDate(LocalDateTime.now(clock)).build();
 

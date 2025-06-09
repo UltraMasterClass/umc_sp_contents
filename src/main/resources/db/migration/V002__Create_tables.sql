@@ -17,22 +17,22 @@ CREATE INDEX idx_categories_parent_id  ON categories(parent_id);
 CREATE INDEX idx_categories_type  ON categories(type);
 
 
--- genero table
-CREATE TABLE generos (
+-- gender table
+CREATE TABLE genders (
     id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
     code VARCHAR(100) NOT NULL,
     description TEXT,
-    parent_id UUID REFERENCES generos(id),
+    parent_id UUID REFERENCES genders(id),
     create_date TIMESTAMP NOT NULL,
     update_date TIMESTAMP NOT NULL
 );
 
 
-CREATE TRIGGER insert_timestamp BEFORE INSERT ON generos FOR EACH ROW EXECUTE PROCEDURE insert_timestamps();
-CREATE TRIGGER update_timestamp BEFORE UPDATE ON generos FOR EACH ROW EXECUTE PROCEDURE update_timestamps();
+CREATE TRIGGER insert_timestamp BEFORE INSERT ON genders FOR EACH ROW EXECUTE PROCEDURE insert_timestamps();
+CREATE TRIGGER update_timestamp BEFORE UPDATE ON genders FOR EACH ROW EXECUTE PROCEDURE update_timestamps();
 
-CREATE UNIQUE INDEX udx_genero_code  ON generos(code);
-CREATE INDEX idx_genero_parent_id  ON generos(parent_id);
+CREATE UNIQUE INDEX udx_genders_code  ON genders(code);
+CREATE INDEX idx_genders_parent_id  ON genders(parent_id);
 
 
 -- tags table
@@ -57,7 +57,7 @@ CREATE TABLE content (
     category_id UUID NOT NULL REFERENCES categories(id),
     name VARCHAR(250) NOT NULL,
     description TEXT,
-    genero_id UUID NOT NULL REFERENCES generos(id),
+    gender_id UUID NOT NULL REFERENCES genders(id),
     especialidad_id UUID NOT NULL,
     resource_url TEXT NOT NULL,
     cdn_url TEXT,
@@ -73,7 +73,7 @@ CREATE TRIGGER update_timestamp BEFORE UPDATE ON content FOR EACH ROW EXECUTE PR
 CREATE INDEX idx_content_type  ON content(type);
 CREATE INDEX idx_content_featured  ON content(featured);
 CREATE INDEX idx_content_category_id  ON content(category_id);
-CREATE INDEX idx_content_genero_id  ON content(genero_id);
+CREATE INDEX idx_content_gender_id  ON content(gender_id);
 CREATE INDEX idx_content_especialidad_id  ON content(especialidad_id);
 
 -- groups table
@@ -84,7 +84,7 @@ CREATE TABLE groups (
     featured BOOLEAN NOT NULL,
     name VARCHAR(250) NOT NULL,
     description TEXT,
-    genero_id UUID NOT NULL REFERENCES generos(id),
+    gender_id UUID NOT NULL REFERENCES genders(id),
     episodes INTEGER,
     duration VARCHAR(20),
     create_date TIMESTAMP NOT NULL,
@@ -95,7 +95,7 @@ CREATE TRIGGER insert_timestamp BEFORE INSERT ON groups FOR EACH ROW EXECUTE PRO
 CREATE TRIGGER update_timestamp BEFORE UPDATE ON groups FOR EACH ROW EXECUTE PROCEDURE update_timestamps();
 
 CREATE INDEX idx_groups_type  ON groups(type);
-CREATE INDEX idx_groups_featured  ON content(featured);
+CREATE INDEX idx_groups_featured  ON groups(featured);
 CREATE INDEX idx_groups_category_id  ON groups(category_id);
 
 -- content_groups (junction)

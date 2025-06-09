@@ -48,8 +48,8 @@ public class Content {
     private String description;
 
     @ManyToOne
-    @JoinColumn(name = "genero_id", nullable = false)
-    private Genero genero;
+    @JoinColumn(name = "gender_id", nullable = false)
+    private Genders genders;
 
     @Column(name = "especialidad_id", nullable = false)
     private UUID especialidadId;

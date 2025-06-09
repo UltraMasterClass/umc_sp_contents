@@ -3,14 +3,14 @@ package com.umc.sp.contents.persistence.repository;
 import com.umc.sp.contents.IntegrationTest;
 import com.umc.sp.contents.persistence.model.Category;
 import com.umc.sp.contents.persistence.model.Content;
-import com.umc.sp.contents.persistence.model.Genero;
+import com.umc.sp.contents.persistence.model.Genders;
 import com.umc.sp.contents.persistence.model.SubscriptionPlan;
 import com.umc.sp.contents.persistence.model.SubscriptionPlanContent;
 import com.umc.sp.contents.persistence.model.id.CategoryId;
 import com.umc.sp.contents.persistence.model.id.ContentId;
 import com.umc.sp.contents.persistence.model.id.CountryCode;
 import com.umc.sp.contents.persistence.model.id.CurrencyCode;
-import com.umc.sp.contents.persistence.model.id.GeneroId;
+import com.umc.sp.contents.persistence.model.id.GenderId;
 import com.umc.sp.contents.persistence.model.id.SubscriptionPlanContentId;
 import com.umc.sp.contents.persistence.model.id.SubscriptionPlanId;
 import com.umc.sp.contents.persistence.model.type.ContentType;
@@ -40,7 +40,7 @@ public class SubscriptionPlanContentsRepositoryIntegrationTest implements Integr
     private CategoriesRepository categoriesRepository;
 
     @Autowired
-    private GenerosRepository generosRepository;
+    private GendersRepository gendersRepository;
 
     @Autowired
     private Clock clock;
@@ -55,7 +55,7 @@ public class SubscriptionPlanContentsRepositoryIntegrationTest implements Integr
         subscriptionPlanContentsRepository.deleteAll();
         subscriptionPlansRepository.deleteAll();
         contentRepository.deleteAll();
-        generosRepository.deleteAll();
+        gendersRepository.deleteAll();
         categoriesRepository.deleteAll();
     }
 
@@ -68,11 +68,11 @@ public class SubscriptionPlanContentsRepositoryIntegrationTest implements Integr
                                                          .description(UUID.randomUUID().toString())
                                                          .code(UUID.randomUUID().toString())
                                                          .build());
-        var genero = generosRepository.save(Genero.builder()
-                                                  .id(new GeneroId())
-                                                  .code(UUID.randomUUID().toString())
-                                                  .description(UUID.randomUUID().toString())
-                                                  .build());
+        var genero = gendersRepository.save(Genders.builder()
+                                                   .id(new GenderId())
+                                                   .code(UUID.randomUUID().toString())
+                                                   .description(UUID.randomUUID().toString())
+                                                   .build());
 
 
         var content = contentRepository.save(Content.builder()
@@ -82,7 +82,7 @@ public class SubscriptionPlanContentsRepositoryIntegrationTest implements Integr
                                                     .category(category)
                                                     .name(UUID.randomUUID().toString())
                                                     .description(UUID.randomUUID().toString())
-                                                    .genero(genero)
+                                                    .genders(genero)
                                                     .especialidadId(UUID.randomUUID())
                                                     .resourceUrl(UUID.randomUUID().toString())
                                                     .cdnUrl(UUID.randomUUID().toString())
