@@ -9,7 +9,7 @@ import static java.util.Objects.nonNull;
 public class GenreConverter {
 
     public GenreDto convertToDto(final Genre genre) {
-        var parent = nonNull(genre.getParent()) ? convertToDto(genre) : null;
+        var parent = nonNull(genre.getParent()) ? convertToDto(genre.getParent()) : null;
         return GenreDto.builder().id(genre.getId().getId()).code(genre.getCode()).description(genre.getDescription()).parent(parent).build();
     }
 }
