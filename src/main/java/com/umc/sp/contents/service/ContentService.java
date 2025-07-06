@@ -10,7 +10,6 @@ import com.umc.sp.contents.persistence.repository.TagsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +25,7 @@ public class ContentService {
 
     @Transactional(readOnly = true)
     public ContentDetailDto getContentById(final ContentId id) {
+        // TODO: add custom exceptions and Advice handler
         var content = contentRepository.findById(id).orElseThrow();
         var contentTags = tagsRepository.findContentTagsByContentId(content.getId().getId());
         var parentId = contentGroupRepository.findByIdContentId(id.getId()).map(contentGroup -> contentGroup.getId().getParentContentId()).orElse(null);
@@ -34,7 +34,7 @@ public class ContentService {
 
     @Transactional(readOnly = true)
     public ContentsDto getContentByParentId(final ContentId parentId, final int offset, final int limit) {
-        var pageable = PageRequest.of(offset / limit, limit, Sort.by("name").ascending());
+        var pageable = PageRequest.of(offset / limit, limit);
         var contents = contentRepository.findByParentIdAndDisableDateIsNull(parentId.getId(), pageable);
         var dtos = contents.stream().map(content -> contentConverter.convertToDto(content, parentId.getId())).toList();
         return ContentsDto.builder().contents(dtos).hasNext(contents.hasNext()).build();

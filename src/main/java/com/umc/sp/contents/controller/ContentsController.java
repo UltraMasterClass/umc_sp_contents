@@ -55,7 +55,13 @@ public class ContentsController {
     public Mono<ResponseEntity<ContentsDto>> getContentByParentId(@PathVariable String contentId,
                                                                   @RequestParam(defaultValue = "0") int offset,
                                                                   @RequestParam(defaultValue = "20") int limit) {
-        return contentServiceManager.getContentByParentId(new ContentId(contentId), offset, (limit > 0) ? limit : 20)
-                                    .map(contentDetailDto -> ResponseEntity.ok().body(contentDetailDto));
+        return contentServiceManager.getContentByParentId(new ContentId(contentId), offset, Math.max(limit, 20))
+                                    .map(contentDetailDto -> ResponseEntity.ok().body(contentDetailDto))
+                                    // TODO: handle on controller advice
+                                    .onErrorResume(IllegalArgumentException.class, e -> Mono.just(ResponseEntity.badRequest().build()))
+                                    .onErrorResume(Exception.class, e -> {
+                                        log.error("Error retrieving content of parent content {}: ", contentId, e);
+                                        return Mono.just(ResponseEntity.internalServerError().build());
+                                    });
     }
 }
