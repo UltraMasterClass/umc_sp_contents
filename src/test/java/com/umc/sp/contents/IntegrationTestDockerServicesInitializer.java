@@ -20,8 +20,9 @@ public class IntegrationTestDockerServicesInitializer
         implements ApplicationContextInitializer<ConfigurableApplicationContext>, ApplicationListener<ContextClosedEvent> {
 
     private final static String TEST_RESOURCES_DOCKER_COMPOSE_YML = "src/test/resources/docker-compose.yml";
-    private static final List<ServiceConfig> SERVICES_PROPERTIES = List.of(new ServiceConfig("elasticsearch", 9200, true, Duration.ofSeconds(60)),
-                                                                           new ServiceConfig("redis", 6379, true, Duration.ofSeconds(60)));
+    private static final List<ServiceConfig> SERVICES_PROPERTIES = List.of(new ServiceConfig("redis", 6379, false, Duration.ofSeconds(60))
+                                                                           //, new ServiceConfig("elasticsearch", 9200, false, Duration.ofSeconds(60))
+                                                                           );
     private final static ComposeContainer ENVIRONMENT = initEnvironment();
 
     @Override

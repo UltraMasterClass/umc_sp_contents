@@ -22,6 +22,6 @@ public class ContentTag {
     @EmbeddedId
     private ContentTagId id;
 
-    @Column(name = "disable_date")
-    private LocalDateTime disableDate;
+    @Column(name = "disabled_date")
+    private LocalDateTime disabledDate;
 }

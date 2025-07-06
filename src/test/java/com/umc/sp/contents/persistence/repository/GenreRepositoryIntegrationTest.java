@@ -1,17 +1,21 @@
 package com.umc.sp.contents.persistence.repository;
 
 import com.umc.sp.contents.IntegrationTest;
+import java.time.Clock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import static org.assertj.core.api.Assertions.*;
-import static utils.ObjectTestUtils.buildCategory;
+import static utils.ObjectTestUtils.buildGenre;
 
-public class CategoriesRepositoryIntegrationTest implements IntegrationTest {
+public class GenreRepositoryIntegrationTest implements IntegrationTest {
 
     @Autowired
-    private CategoriesRepository categoriesRepository;
+    private GenresRepository genresRepository;
+
+    @Autowired
+    private Clock clock;
 
     @BeforeEach
     void setUp() {
@@ -20,20 +24,20 @@ public class CategoriesRepositoryIntegrationTest implements IntegrationTest {
 
     @AfterEach
     void cleanUp() {
-        categoriesRepository.deleteAll();
+        genresRepository.deleteAll();
     }
 
     @Test
     void shouldSaveAndFindById() {
         //given
-        var category = buildCategory().build();
+        var genero = buildGenre().build();
 
         //when
-        var saved = categoriesRepository.save(category);
-        var result = categoriesRepository.findById(category.getId());
+        var saved = genresRepository.save(genero);
+        var result = genresRepository.findById(genero.getId());
 
         //then
         assertThat(result).get().isEqualTo(saved);
-        assertThat(result).get().isEqualTo(category);
+        assertThat(result).get().isEqualTo(genero);
     }
 }

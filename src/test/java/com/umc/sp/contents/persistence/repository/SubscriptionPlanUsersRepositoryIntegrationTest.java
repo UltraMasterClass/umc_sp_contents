@@ -11,11 +11,11 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.UUID;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import static org.assertj.core.api.Assertions.*;
 
 public class SubscriptionPlanUsersRepositoryIntegrationTest implements IntegrationTest {
 
@@ -63,7 +63,7 @@ public class SubscriptionPlanUsersRepositoryIntegrationTest implements Integrati
         var result = subscriptionPlanUsersRepository.findById(subscriptionPlanUser.getId());
 
         //then
-        Assertions.assertThat(result).get().isEqualTo(saved);
-        Assertions.assertThat(result).get().isEqualTo(subscriptionPlanUser);
+        assertThat(result).get().isEqualTo(saved);
+        assertThat(result).get().isEqualTo(subscriptionPlanUser);
     }
 }

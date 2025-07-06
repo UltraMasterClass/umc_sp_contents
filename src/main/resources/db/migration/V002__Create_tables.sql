@@ -17,22 +17,22 @@ CREATE INDEX idx_categories_parent_id  ON categories(parent_id);
 CREATE INDEX idx_categories_type  ON categories(type);
 
 
--- gender table
-CREATE TABLE genders (
+-- genres table
+CREATE TABLE genres (
     id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
     code VARCHAR(100) NOT NULL,
     description TEXT,
-    parent_id UUID REFERENCES genders(id),
+    parent_id UUID REFERENCES genres(id),
     create_date TIMESTAMP NOT NULL,
     update_date TIMESTAMP NOT NULL
 );
 
 
-CREATE TRIGGER insert_timestamp BEFORE INSERT ON genders FOR EACH ROW EXECUTE PROCEDURE insert_timestamps();
-CREATE TRIGGER update_timestamp BEFORE UPDATE ON genders FOR EACH ROW EXECUTE PROCEDURE update_timestamps();
+CREATE TRIGGER insert_timestamp BEFORE INSERT ON genres FOR EACH ROW EXECUTE PROCEDURE insert_timestamps();
+CREATE TRIGGER update_timestamp BEFORE UPDATE ON genres FOR EACH ROW EXECUTE PROCEDURE update_timestamps();
 
-CREATE UNIQUE INDEX udx_genders_code  ON genders(code);
-CREATE INDEX idx_genders_parent_id  ON genders(parent_id);
+CREATE UNIQUE INDEX udx_genres_code  ON genres(code);
+CREATE INDEX idx_genres_parent_id  ON genres(parent_id);
 
 
 -- tags table
@@ -49,64 +49,55 @@ CREATE TRIGGER update_timestamp BEFORE UPDATE ON tags FOR EACH ROW EXECUTE PROCE
 
 CREATE UNIQUE INDEX udx_tags_code  ON tags(code);
 
--- content table
-CREATE TABLE content (
+-- contents table
+CREATE TABLE contents (
     id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
-    featured BOOLEAN NOT NULL,
-    type VARCHAR(50) NOT NULL,
     category_id UUID NOT NULL REFERENCES categories(id),
-    name VARCHAR(250) NOT NULL,
-    description TEXT,
-    gender_id UUID NOT NULL REFERENCES genders(id),
-    especialidad_id UUID NOT NULL,
-    resource_url TEXT NOT NULL,
-    cdn_url TEXT,
-    rating DECIMAL(2,1),
-    duration VARCHAR(20),
-    create_date TIMESTAMP NOT NULL,
-    update_date TIMESTAMP NOT NULL
-);
-
-CREATE TRIGGER insert_timestamp BEFORE INSERT ON content FOR EACH ROW EXECUTE PROCEDURE insert_timestamps();
-CREATE TRIGGER update_timestamp BEFORE UPDATE ON content FOR EACH ROW EXECUTE PROCEDURE update_timestamps();
-
-CREATE INDEX idx_content_type  ON content(type);
-CREATE INDEX idx_content_featured  ON content(featured);
-CREATE INDEX idx_content_category_id  ON content(category_id);
-CREATE INDEX idx_content_gender_id  ON content(gender_id);
-CREATE INDEX idx_content_especialidad_id  ON content(especialidad_id);
-
--- groups table
-CREATE TABLE groups (
-    id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
-    type VARCHAR(50) NOT NULL,
-    category_id UUID,
+    genre_id UUID NOT NULL REFERENCES genres(id),
+    speciality_id UUID NOT NULL,
+    type VARCHAR(45),
+    structure_type VARCHAR(45),
+    name VARCHAR(45),
+    description VARCHAR(45),
     featured BOOLEAN NOT NULL,
-    name VARCHAR(250) NOT NULL,
-    description TEXT,
-    gender_id UUID NOT NULL REFERENCES genders(id),
-    episodes INTEGER,
-    duration VARCHAR(20),
     create_date TIMESTAMP NOT NULL,
     update_date TIMESTAMP NOT NULL
 );
 
-CREATE TRIGGER insert_timestamp BEFORE INSERT ON groups FOR EACH ROW EXECUTE PROCEDURE insert_timestamps();
-CREATE TRIGGER update_timestamp BEFORE UPDATE ON groups FOR EACH ROW EXECUTE PROCEDURE update_timestamps();
+CREATE TRIGGER insert_timestamp BEFORE INSERT ON contents FOR EACH ROW EXECUTE PROCEDURE insert_timestamps();
+CREATE TRIGGER update_timestamp BEFORE UPDATE ON contents FOR EACH ROW EXECUTE PROCEDURE update_timestamps();
 
-CREATE INDEX idx_groups_type  ON groups(type);
-CREATE INDEX idx_groups_featured  ON groups(featured);
-CREATE INDEX idx_groups_category_id  ON groups(category_id);
+CREATE INDEX idx_contents_type  ON contents(type);
+CREATE INDEX idx_contents_featured  ON contents(featured);
+CREATE INDEX idx_contents_category_id  ON contents(category_id);
+CREATE INDEX idx_contents_genre_id  ON contents(genre_id);
+CREATE INDEX idx_contents_speciality_id  ON contents(speciality_id);
+
+-- content_info
+CREATE TABLE content_info (
+    id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
+    content_id UUID NOT NULL,
+    type VARCHAR(45),
+    value VARCHAR(45),
+    disabled_date TIMESTAMP,
+    create_date TIMESTAMP NOT NULL,
+    update_date TIMESTAMP NOT NULL,
+    FOREIGN KEY (content_id) REFERENCES contents(id)
+);
+
+CREATE TRIGGER insert_timestamp BEFORE INSERT ON content_info FOR EACH ROW EXECUTE PROCEDURE insert_timestamps();
+CREATE TRIGGER update_timestamp BEFORE UPDATE ON content_info FOR EACH ROW EXECUTE PROCEDURE update_timestamps();
+
 
 -- content_groups (junction)
 CREATE TABLE content_groups (
-    content_id UUID NOT NULL REFERENCES content(id),
-    group_id UUID NOT NULL REFERENCES groups(id),
+    parent_content_id UUID NOT NULL REFERENCES contents(id),
+    content_id UUID NOT NULL REFERENCES contents(id),
     sort_order INTEGER NOT NULL,
-    disable_date TIMESTAMP,
+    disabled_date TIMESTAMP,
     create_date TIMESTAMP NOT NULL,
     update_date TIMESTAMP NOT NULL,
-    PRIMARY KEY (content_id, group_id)
+    PRIMARY KEY (parent_content_id, content_id)
 );
 
 CREATE TRIGGER insert_timestamp BEFORE INSERT ON content_groups FOR EACH ROW EXECUTE PROCEDURE insert_timestamps();
@@ -115,8 +106,8 @@ CREATE TRIGGER update_timestamp BEFORE UPDATE ON content_groups FOR EACH ROW EXE
 -- content_tags (junction)
 CREATE TABLE content_tags (
     tag_id UUID NOT NULL REFERENCES tags(id),
-    content_id UUID NOT NULL REFERENCES content(id),
-    disable_date TIMESTAMP,
+    content_id UUID NOT NULL REFERENCES contents(id),
+    disabled_date TIMESTAMP,
     create_date TIMESTAMP NOT NULL,
     update_date TIMESTAMP NOT NULL,
     PRIMARY KEY (tag_id, content_id)
@@ -125,24 +116,10 @@ CREATE TABLE content_tags (
 CREATE TRIGGER insert_timestamp BEFORE INSERT ON content_tags FOR EACH ROW EXECUTE PROCEDURE insert_timestamps();
 CREATE TRIGGER update_timestamp BEFORE UPDATE ON content_tags FOR EACH ROW EXECUTE PROCEDURE update_timestamps();
 
-
--- series_tags (junction)
-CREATE TABLE groups_tags (
-    tag_id UUID NOT NULL REFERENCES tags(id),
-    group_id UUID NOT NULL REFERENCES groups(id),
-    disable_date TIMESTAMP,
-    create_date TIMESTAMP NOT NULL,
-    update_date TIMESTAMP NOT NULL,
-    PRIMARY KEY (tag_id, group_id)
-);
-
-CREATE TRIGGER insert_timestamp BEFORE INSERT ON groups_tags FOR EACH ROW EXECUTE PROCEDURE insert_timestamps();
-CREATE TRIGGER update_timestamp BEFORE UPDATE ON groups_tags FOR EACH ROW EXECUTE PROCEDURE update_timestamps();
-
 -- subtitles table
 CREATE TABLE subtitles (
     id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
-    content_id UUID NOT NULL REFERENCES content(id),
+    content_id UUID NOT NULL REFERENCES contents(id),
     language_code VARCHAR(10) NOT NULL,
     create_date TIMESTAMP NOT NULL,
     update_date TIMESTAMP NOT NULL,
@@ -193,7 +170,7 @@ CREATE INDEX idx_subscription_plan_country_code  ON subscription_plan(country_co
 CREATE TABLE subscription_plan_content (
     id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
     subscription_plan_id UUID NOT NULL REFERENCES subscription_plan(id),
-    content_id UUID NOT NULL REFERENCES content(id),
+    content_id UUID NOT NULL REFERENCES contents(id),
     disable_date TIMESTAMP,
     create_date TIMESTAMP NOT NULL,
     update_date TIMESTAMP NOT NULL
