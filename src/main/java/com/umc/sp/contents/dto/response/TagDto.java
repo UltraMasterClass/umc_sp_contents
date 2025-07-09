@@ -1,6 +1,6 @@
-package com.umc.sp.contents.controller.dto.response;
+package com.umc.sp.contents.dto.response;
 
-import java.util.List;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,7 +10,8 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ContentsDto {
-    private List<ContentDto> contents;
-    private boolean hasNext;
+public class TagDto {
+    private UUID id;
+    private String code;
+    private String description;
 }

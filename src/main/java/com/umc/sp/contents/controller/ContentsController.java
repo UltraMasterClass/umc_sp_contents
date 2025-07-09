@@ -1,7 +1,7 @@
 package com.umc.sp.contents.controller;
 
-import com.umc.sp.contents.controller.dto.response.ContentDetailDto;
-import com.umc.sp.contents.controller.dto.response.ContentsDto;
+import com.umc.sp.contents.dto.response.ContentDetailDto;
+import com.umc.sp.contents.dto.response.ContentsDto;
 import com.umc.sp.contents.manager.ContentServiceManager;
 import com.umc.sp.contents.persistence.model.id.ContentId;
 import java.time.Clock;
@@ -55,7 +55,7 @@ public class ContentsController {
     public Mono<ResponseEntity<ContentsDto>> getContentByParentId(@PathVariable String contentId,
                                                                   @RequestParam(defaultValue = "0") int offset,
                                                                   @RequestParam(defaultValue = "20") int limit) {
-        return contentServiceManager.getContentByParentId(new ContentId(contentId), offset, Math.max(limit, 20))
+        return contentServiceManager.getContentByParentId(new ContentId(contentId), offset, getLimit(limit))
                                     .map(contentDetailDto -> ResponseEntity.ok().body(contentDetailDto))
                                     // TODO: handle on controller advice
                                     .onErrorResume(IllegalArgumentException.class, e -> Mono.just(ResponseEntity.badRequest().build()))
@@ -63,5 +63,9 @@ public class ContentsController {
                                         log.error("Error retrieving content of parent content {}: ", contentId, e);
                                         return Mono.just(ResponseEntity.internalServerError().build());
                                     });
+    }
+
+    private int getLimit(final int limit) {
+        return (limit > 0) ? limit : 20;
     }
 }

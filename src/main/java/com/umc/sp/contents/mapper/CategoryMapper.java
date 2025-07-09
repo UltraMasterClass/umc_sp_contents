@@ -1,12 +1,12 @@
-package com.umc.sp.contents.converter;
+package com.umc.sp.contents.mapper;
 
-import com.umc.sp.contents.controller.dto.response.CategoryDto;
+import com.umc.sp.contents.dto.response.CategoryDto;
 import com.umc.sp.contents.persistence.model.Category;
 import org.springframework.stereotype.Component;
 import static java.util.Objects.nonNull;
 
 @Component
-public class CategoryConverter {
+public class CategoryMapper {
 
     public CategoryDto convertToDto(final Category category) {
         var parentCategory = nonNull(category.getParent()) ? convertToDto(category.getParent()) : null;

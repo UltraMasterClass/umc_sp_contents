@@ -1,4 +1,4 @@
-package com.umc.sp.contents.controller.dto.response;
+package com.umc.sp.contents.dto.response;
 
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -10,8 +10,9 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TagDto {
+public class GenreDto {
     private UUID id;
     private String code;
     private String description;
+    private GenreDto parent;
 }

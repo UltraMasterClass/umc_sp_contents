@@ -1,9 +1,9 @@
 package com.umc.sp.contents.controller;
 
 import com.umc.sp.contents.IntegrationTest;
-import com.umc.sp.contents.controller.dto.response.ContentDetailDto;
-import com.umc.sp.contents.controller.dto.response.ContentsDto;
-import com.umc.sp.contents.converter.ContentConverter;
+import com.umc.sp.contents.dto.response.ContentDetailDto;
+import com.umc.sp.contents.dto.response.ContentsDto;
+import com.umc.sp.contents.mapper.ContentMapper;
 import com.umc.sp.contents.persistence.model.ContentTag;
 import com.umc.sp.contents.persistence.model.id.ContentTagId;
 import com.umc.sp.contents.persistence.model.type.ContentStructureType;
@@ -62,7 +62,7 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
     private TagsRepository tagsRepository;
 
     @Autowired
-    private ContentConverter contentConverter;
+    private ContentMapper contentMapper;
 
     @Autowired
     private Clock clock;
@@ -110,7 +110,7 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
                                   .getResponseBody();
 
         //then
-        assertThat(result).isEqualTo(contentConverter.convertToDetailDto(content, parentContent.getId().getId(), List.of(tag)));
+        assertThat(result).isEqualTo(contentMapper.convertToDetailDto(content, parentContent.getId().getId(), List.of(tag)));
     }
 
     @Test
@@ -137,9 +137,9 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         var contentGroup5 = contentGroupRepository.save(buildContentGroup(parentContent, content5).sortOrder(5).build());
 
         var expectedResult = ContentsDto.builder()
-                                        .contents(List.of(contentConverter.convertToDto(content, parentContent.getId().getId()),
-                                                          contentConverter.convertToDto(content2, parentContent.getId().getId()),
-                                                          contentConverter.convertToDto(content4, parentContent.getId().getId())))
+                                        .contents(List.of(contentMapper.convertToDto(content, parentContent.getId().getId()),
+                                                          contentMapper.convertToDto(content2, parentContent.getId().getId()),
+                                                          contentMapper.convertToDto(content4, parentContent.getId().getId())))
                                         .hasNext(true)
                                         .build();
 

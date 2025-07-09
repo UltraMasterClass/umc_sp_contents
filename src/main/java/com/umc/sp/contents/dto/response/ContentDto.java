@@ -1,4 +1,4 @@
-package com.umc.sp.contents.controller.dto.response;
+package com.umc.sp.contents.dto.response;
 
 import com.umc.sp.contents.persistence.model.type.ContentStructureType;
 import com.umc.sp.contents.persistence.model.type.ContentType;

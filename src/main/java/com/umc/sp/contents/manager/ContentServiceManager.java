@@ -1,7 +1,7 @@
 package com.umc.sp.contents.manager;
 
-import com.umc.sp.contents.controller.dto.response.ContentDetailDto;
-import com.umc.sp.contents.controller.dto.response.ContentsDto;
+import com.umc.sp.contents.dto.response.ContentDetailDto;
+import com.umc.sp.contents.dto.response.ContentsDto;
 import com.umc.sp.contents.persistence.model.id.ContentId;
 import com.umc.sp.contents.service.ContentService;
 import lombok.RequiredArgsConstructor;

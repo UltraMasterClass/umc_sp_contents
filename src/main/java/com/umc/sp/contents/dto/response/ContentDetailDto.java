@@ -1,4 +1,4 @@
-package com.umc.sp.contents.controller.dto.response;
+package com.umc.sp.contents.dto.response;
 
 import java.util.List;
 import lombok.AllArgsConstructor;

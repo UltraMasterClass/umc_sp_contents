@@ -1,9 +1,9 @@
-package com.umc.sp.contents.converter;
+package com.umc.sp.contents.mapper;
 
-import com.umc.sp.contents.controller.dto.response.ContentDetailDto;
-import com.umc.sp.contents.controller.dto.response.ContentDto;
-import com.umc.sp.contents.controller.dto.response.ContentInfoDto;
-import com.umc.sp.contents.controller.dto.response.TagDto;
+import com.umc.sp.contents.dto.response.ContentDetailDto;
+import com.umc.sp.contents.dto.response.ContentDto;
+import com.umc.sp.contents.dto.response.ContentInfoDto;
+import com.umc.sp.contents.dto.response.TagDto;
 import com.umc.sp.contents.persistence.model.Content;
 import com.umc.sp.contents.persistence.model.ContentInfo;
 import com.umc.sp.contents.persistence.model.Tag;
@@ -16,12 +16,12 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class ContentConverter {
+public class ContentMapper {
 
-    private final GenreConverter genreConverter;
-    private final TagConverter tagConverter;
-    private final CategoryConverter categoryConverter;
-    private final ContentInfoConverter contentInfoConverter;
+    private final GenreMapper genreMapper;
+    private final TagMapper tagMapper;
+    private final CategoryMapper categoryMapper;
+    private final ContentInfoMapper contentInfoMapper;
 
     public ContentDto convertToDto(final Content content, final UUID parentId) {
         return ContentDto.builder()
@@ -38,8 +38,8 @@ public class ContentConverter {
     }
 
     public ContentDetailDto convertToDetailDto(final Content content, final UUID parentId, final List<Tag> contentTags) {
-        var categoryDto = categoryConverter.convertToDto(content.getCategory());
-        var genreDto = genreConverter.convertToDto(content.getGenre());
+        var categoryDto = categoryMapper.convertToDto(content.getCategory());
+        var genreDto = genreMapper.convertToDto(content.getGenre());
         return ContentDetailDto.builder()
                                .id(content.getId().getId())
                                .parentId(parentId)
@@ -60,13 +60,13 @@ public class ContentConverter {
         if (CollectionUtils.isEmpty(contentTags)) {
             return new ArrayList<>();
         }
-        return contentTags.stream().map(tagConverter::convertToDto).toList();
+        return contentTags.stream().map(tagMapper::convertToDto).toList();
     }
 
     private List<ContentInfoDto> getAttributes(final List<ContentInfo> attributes) {
         if (CollectionUtils.isEmpty(attributes)) {
             return new ArrayList<>();
         }
-        return attributes.stream().map(contentInfoConverter::convertToDto).toList();
+        return attributes.stream().map(contentInfoMapper::convertToDto).toList();
     }
 }
