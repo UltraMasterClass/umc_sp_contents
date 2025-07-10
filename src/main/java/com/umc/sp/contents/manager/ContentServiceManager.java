@@ -4,7 +4,6 @@ import com.umc.sp.contents.dto.response.ContentDetailDto;
 import com.umc.sp.contents.dto.response.ContentsDto;
 import com.umc.sp.contents.persistence.model.id.ContentId;
 import com.umc.sp.contents.service.ContentSearchService;
-import com.umc.sp.contents.service.ContentSearchServiceDB;
 import com.umc.sp.contents.service.ContentService;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +15,7 @@ import reactor.core.publisher.Mono;
 public class ContentServiceManager {
 
     private final ContentService contentService;
-    private final ContentSearchService contentSearchServiceDB;
+    private final ContentSearchService contentSearchService;
 
     public Mono<ContentDetailDto> getContentById(final ContentId id) {
         return Mono.just(contentService.getContentById(id));
@@ -31,6 +30,6 @@ public class ContentServiceManager {
                                            final String search,
                                            final int offset,
                                            final int limit) {
-        return Mono.just(contentSearchServiceDB.searchContent(tagCodes, categoryNames, search, offset, limit));
+        return Mono.just(contentSearchService.searchContent(tagCodes, categoryNames, search, offset, limit));
     }
 }
