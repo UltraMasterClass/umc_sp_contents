@@ -7,11 +7,11 @@ import com.umc.sp.contents.persistence.model.type.ContentSectionSortType;
 import com.umc.sp.contents.persistence.model.type.ContentSectionType;
 import java.time.Clock;
 import java.util.UUID;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import static org.assertj.core.api.Assertions.*;
 
 public class ContentSectionsRepositoryIntegrationTest implements IntegrationTest {
 
@@ -48,7 +48,7 @@ public class ContentSectionsRepositoryIntegrationTest implements IntegrationTest
         var result = contentSectionsRepository.findById(contentSection.getId());
 
         //then
-        Assertions.assertThat(result).get().usingRecursiveComparison().isEqualTo(saved);
-        Assertions.assertThat(result).get().usingRecursiveComparison().isEqualTo(contentSection);
+        assertThat(result).get().usingRecursiveComparison().isEqualTo(saved);
+        assertThat(result).get().usingRecursiveComparison().isEqualTo(contentSection);
     }
 }

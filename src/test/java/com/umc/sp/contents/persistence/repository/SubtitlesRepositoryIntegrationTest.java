@@ -1,25 +1,18 @@
 package com.umc.sp.contents.persistence.repository;
 
 import com.umc.sp.contents.IntegrationTest;
-import com.umc.sp.contents.persistence.model.Category;
-import com.umc.sp.contents.persistence.model.Content;
-import com.umc.sp.contents.persistence.model.Genders;
 import com.umc.sp.contents.persistence.model.Subtitle;
-import com.umc.sp.contents.persistence.model.id.CategoryId;
-import com.umc.sp.contents.persistence.model.id.ContentId;
-import com.umc.sp.contents.persistence.model.id.GenderId;
 import com.umc.sp.contents.persistence.model.id.LanguageCode;
 import com.umc.sp.contents.persistence.model.id.SubtitleId;
-import com.umc.sp.contents.persistence.model.type.ContentType;
-import java.math.BigDecimal;
 import java.time.Clock;
-import java.util.UUID;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import static com.umc.sp.contents.persistence.model.type.CategoryType.TOPIC;
+import static org.assertj.core.api.Assertions.*;
+import static utils.ObjectTestUtils.buildCategory;
+import static utils.ObjectTestUtils.buildContent;
+import static utils.ObjectTestUtils.buildGenre;
 
 public class SubtitlesRepositoryIntegrationTest implements IntegrationTest {
 
@@ -33,7 +26,7 @@ public class SubtitlesRepositoryIntegrationTest implements IntegrationTest {
     private CategoriesRepository categoriesRepository;
 
     @Autowired
-    private GendersRepository gendersRepository;
+    private GenresRepository genresRepository;
 
     @Autowired
     private Clock clock;
@@ -48,39 +41,16 @@ public class SubtitlesRepositoryIntegrationTest implements IntegrationTest {
     void cleanUp() {
         subtitlesRepository.deleteAll();
         contentRepository.deleteAll();
-        gendersRepository.deleteAll();
+        genresRepository.deleteAll();
         categoriesRepository.deleteAll();
     }
 
     @Test
     void shouldSaveAndFindById() {
         //given
-        var category = categoriesRepository.save(Category.builder()
-                                                         .id(new CategoryId())
-                                                         .type(TOPIC)
-                                                         .description(UUID.randomUUID().toString())
-                                                         .code(UUID.randomUUID().toString())
-                                                         .build());
-        var genero = gendersRepository.save(Genders.builder()
-                                                   .id(new GenderId())
-                                                   .code(UUID.randomUUID().toString())
-                                                   .description(UUID.randomUUID().toString())
-                                                   .build());
-        var content = contentRepository.save(Content.builder()
-                                                    .id(new ContentId())
-                                                    .featured(true)
-                                                    .type(ContentType.VIDEO)
-                                                    .category(category)
-                                                    .name(UUID.randomUUID().toString())
-                                                    .description(UUID.randomUUID().toString())
-                                                    .genders(genero)
-                                                    .especialidadId(UUID.randomUUID())
-                                                    .resourceUrl(UUID.randomUUID().toString())
-                                                    .cdnUrl(UUID.randomUUID().toString())
-                                                    .rating(BigDecimal.valueOf(4.5))
-                                                    .duration("1:30:00")
-                                                    .build());
-
+        var category = categoriesRepository.save(buildCategory().build());
+        var genre = genresRepository.save(buildGenre().build());
+        var content = contentRepository.save(buildContent(category, genre).build());
 
         var subtitle = Subtitle.builder().id(new SubtitleId()).contentId(content.getId()).priority(1).languageCode(new LanguageCode()).build();
 
@@ -89,8 +59,8 @@ public class SubtitlesRepositoryIntegrationTest implements IntegrationTest {
         var result = subtitlesRepository.findById(subtitle.getId());
 
         //then
-        Assertions.assertThat(result).get().isEqualTo(saved);
-        Assertions.assertThat(result).get().isEqualTo(subtitle);
+        assertThat(result).get().isEqualTo(saved);
+        assertThat(result).get().isEqualTo(subtitle);
     }
 }
 

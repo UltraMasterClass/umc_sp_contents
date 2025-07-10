@@ -25,6 +25,6 @@ public class ContentGroup {
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
-    @Column(name = "disable_date")
-    private LocalDateTime disableDate;
+    @Column(name = "disabled_date")
+    private LocalDateTime disabledDate;
 }

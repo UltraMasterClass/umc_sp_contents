@@ -1,6 +1,6 @@
 package com.umc.sp.contents.persistence.model;
 
-import com.umc.sp.contents.persistence.model.id.GenderId;
+import com.umc.sp.contents.persistence.model.id.GenresId;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
@@ -18,12 +18,12 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "genders")
-public class Genders {
+@Table(name = "genres")
+public class Genre {
 
     @EmbeddedId
     @AttributeOverride(name = "id", column = @Column(name = "id"))
-    private GenderId id;
+    private GenresId id;
 
     @Column(name = "code", nullable = false, length = 100)
     private String code;
@@ -33,5 +33,5 @@ public class Genders {
 
     @ManyToOne
     @JoinColumn(name = "parent_id")
-    private Genders parent;
+    private Genre parent;
 }

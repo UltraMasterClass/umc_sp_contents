@@ -1,18 +1,25 @@
 package com.umc.sp.contents.controller;
 
+import com.umc.sp.contents.dto.response.ContentDetailDto;
+import com.umc.sp.contents.dto.response.ContentsDto;
+import com.umc.sp.contents.manager.ContentServiceManager;
+import com.umc.sp.contents.persistence.model.id.ContentId;
 import java.time.Clock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Validated
@@ -22,8 +29,9 @@ import java.util.Map;
 public class ContentsController {
 
     private final Clock clock;
+    private final ContentServiceManager contentServiceManager;
 
-    @RequestMapping(value = "/content", method = RequestMethod.GET,produces = "application/json")
+    @RequestMapping(value = "/content", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<Map<String, Object>> findUmcVideo() {
         log.info("Starting Content Administration....");
 
@@ -38,4 +46,26 @@ public class ContentsController {
     }
 
 
+    @RequestMapping(value = "/content/{contentId}", method = RequestMethod.GET, produces = "application/json")
+    public Mono<ResponseEntity<ContentDetailDto>> getContentById(@PathVariable String contentId) {
+        return contentServiceManager.getContentById(new ContentId(contentId)).map(contentDetailDto -> ResponseEntity.ok().body(contentDetailDto));
+    }
+
+    @RequestMapping(value = "/content/{contentId}/content", method = RequestMethod.GET, produces = "application/json")
+    public Mono<ResponseEntity<ContentsDto>> getContentByParentId(@PathVariable String contentId,
+                                                                  @RequestParam(defaultValue = "0") int offset,
+                                                                  @RequestParam(defaultValue = "20") int limit) {
+        return contentServiceManager.getContentByParentId(new ContentId(contentId), offset, getLimit(limit))
+                                    .map(contentDetailDto -> ResponseEntity.ok().body(contentDetailDto))
+                                    // TODO: handle on controller advice
+                                    .onErrorResume(IllegalArgumentException.class, e -> Mono.just(ResponseEntity.badRequest().build()))
+                                    .onErrorResume(Exception.class, e -> {
+                                        log.error("Error retrieving content of parent content {}: ", contentId, e);
+                                        return Mono.just(ResponseEntity.internalServerError().build());
+                                    });
+    }
+
+    private int getLimit(final int limit) {
+        return (limit > 0) ? limit : 20;
+    }
 }
