@@ -5,9 +5,9 @@ import com.umc.sp.contents.dto.response.ContentsDto;
 import com.umc.sp.contents.manager.ContentServiceManager;
 import com.umc.sp.contents.persistence.model.id.ContentId;
 import java.time.Clock;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,10 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -31,20 +27,14 @@ public class ContentsController {
     private final Clock clock;
     private final ContentServiceManager contentServiceManager;
 
-    @RequestMapping(value = "/content", method = RequestMethod.GET, produces = "application/json")
-    public ResponseEntity<Map<String, Object>> findUmcVideo() {
-        log.info("Starting Content Administration....");
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("timeStamp", LocalDateTime.now(clock).format(DateTimeFormatter.ISO_DATE_TIME));
-        response.put("status", "OK");
-        response.put("content_id", "b8ef44b4-b49b-48d8-8d21-493cb1adb9ba");
-        response.put("message", "Content  operations  successfully");
-
-        log.info("Finishing Content Administration....");
-        return new ResponseEntity<>(response, HttpStatus.OK);
+    @RequestMapping(value = "/content/search", method = RequestMethod.GET, produces = "application/json")
+    public Mono<ResponseEntity<ContentsDto>> searchContent(@RequestParam(required = false) String text,
+                                                           @RequestParam(required = false) Set<String> tags,
+                                                           @RequestParam(required = false) Set<String> categories,
+                                                           @RequestParam(required = false, defaultValue = "0") int offset,
+                                                           @RequestParam(required = false, defaultValue = "20") int limit) {
+        return contentServiceManager.searchContent(tags, categories, text, offset, getLimit(limit)).map(contentsDto -> ResponseEntity.ok().body(contentsDto));
     }
-
 
     @RequestMapping(value = "/content/{contentId}", method = RequestMethod.GET, produces = "application/json")
     public Mono<ResponseEntity<ContentDetailDto>> getContentById(@PathVariable String contentId) {
@@ -53,8 +43,8 @@ public class ContentsController {
 
     @RequestMapping(value = "/content/{contentId}/content", method = RequestMethod.GET, produces = "application/json")
     public Mono<ResponseEntity<ContentsDto>> getContentByParentId(@PathVariable String contentId,
-                                                                  @RequestParam(defaultValue = "0") int offset,
-                                                                  @RequestParam(defaultValue = "20") int limit) {
+                                                                  @RequestParam(required = false, defaultValue = "0") int offset,
+                                                                  @RequestParam(required = false, defaultValue = "20") int limit) {
         return contentServiceManager.getContentByParentId(new ContentId(contentId), offset, getLimit(limit))
                                     .map(contentDetailDto -> ResponseEntity.ok().body(contentDetailDto))
                                     // TODO: handle on controller advice

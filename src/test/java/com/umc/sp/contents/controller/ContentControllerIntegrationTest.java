@@ -18,6 +18,8 @@ import com.umc.sp.contents.persistence.repository.TagsRepository;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import org.json.JSONException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -159,6 +161,127 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
 
         //then
         assertThat(result).isEqualTo(expectedResult);
+    }
+
+    @Test
+    void shouldSearchContent() {
+        //given
+        var text = UUID.randomUUID().toString();
+        var tag = tagsRepository.save(buildTag().code(text + UUID.randomUUID()).build());
+        var tag2 = tagsRepository.save(buildTag().code(UUID.randomUUID() + text).build());
+        var tagWithDifferentText = tagsRepository.save(buildTag().build());
+
+        var category = categoriesRepository.save(buildCategory().code(UUID.randomUUID() + text).build());
+        var category2 = categoriesRepository.save(buildCategory().code(text + UUID.randomUUID()).build());
+        var categoryDifferentText = categoriesRepository.save(buildCategory().code(UUID.randomUUID().toString()).build());
+
+        var genre = genresRepository.save(buildGenre().build());
+
+        var contentInfo = buildContentInfo().build();
+        var content = buildContent(category, genre).name("bbbbbbbb").contentInfos(List.of(contentInfo)).build();
+        contentInfo.setContent(content);
+        content = contentRepository.save(content);
+        var content2 = contentRepository.save(buildContent(category, genre).name("ccccccccc").build());
+        // excluded from results as is out of page
+        var content3 = contentRepository.save(buildContent(category2, genre).name("zzzzzzzz").build());
+        // excluded tag, category and title do not contain the text to search
+        var content4 = contentRepository.save(buildContent(categoryDifferentText, genre).name("111aaaaaaaa").build());
+        var content5 = contentRepository.save(buildContent(categoryDifferentText, genre).name("dddddddd").build());
+
+        var parentContent = contentRepository.save(buildContent(categoryDifferentText, genre).name("aaaaaaaaa" + text + UUID.randomUUID())
+                                                                                             .type(ContentType.SERIES)
+                                                                                             .structureType(ContentStructureType.GROUP)
+                                                                                             .build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content).sortOrder(1).build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content2).sortOrder(2).build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content3).sortOrder(3).disabledDate(LocalDateTime.now(clock)).build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content4).sortOrder(4).build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content5).sortOrder(5).build());
+
+        contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content.getId().getId(), tag.getId().getId())).build());
+        contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content5.getId().getId(), tag2.getId().getId())).build());
+        contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content4.getId().getId(), tagWithDifferentText.getId().getId())).build());
+
+        //when
+        var result = webTestClient.get()
+                                  .uri(uriBuilder -> uriBuilder.path("/api/content/search")
+                                                               .queryParam("text", text)
+                                                               .queryParam("offset", 0)
+                                                               .queryParam("limit", 4)
+                                                               .build())
+                                  .accept(MediaType.APPLICATION_JSON)
+                                  .exchange()
+                                  .expectStatus()
+                                  .isOk()
+                                  .expectBody(ContentsDto.class)
+                                  .returnResult()
+                                  .getResponseBody();
+
+        //then
+        assertThat(result).isNotNull();
+        assertThat(result.isHasNext()).isTrue();
+        assertThat(result.getContents()).containsExactlyInAnyOrder(contentMapper.convertToDto(parentContent, null),
+                                                                   contentMapper.convertToDto(content, parentContent.getId().getId()),
+                                                                   contentMapper.convertToDto(content2, parentContent.getId().getId()),
+                                                                   contentMapper.convertToDto(content5, parentContent.getId().getId()));
+    }
+
+
+    @Test
+    void shouldSearchContentFilteredByTagAndCategory() {
+        //given
+        var text = UUID.randomUUID().toString();
+        var categoryCode = UUID.randomUUID().toString();
+        var tagCode = UUID.randomUUID().toString();
+
+        var tag = tagsRepository.save(buildTag().code(tagCode).build());
+        var tag2 = tagsRepository.save(buildTag().code(UUID.randomUUID() + text).build());
+        var tagWithDifferentTextAndTag = tagsRepository.save(buildTag().build());
+
+        var category = categoriesRepository.save(buildCategory().code(categoryCode).build());
+        var category2 = categoriesRepository.save(buildCategory().code(text + UUID.randomUUID()).build());
+        var categoryDifferentTextAndCode = categoriesRepository.save(buildCategory().code(UUID.randomUUID().toString()).build());
+        var genre = genresRepository.save(buildGenre().build());
+
+        var content = contentRepository.save(buildContent(category, genre).build());
+        var content2 = contentRepository.save(buildContent(category, genre).name(UUID.randomUUID() + text + UUID.randomUUID()).build());
+        var content3 = contentRepository.save(buildContent(category2, genre).build());
+        var content4 = contentRepository.save(buildContent(categoryDifferentTextAndCode, genre).build());
+        var content5 = contentRepository.save(buildContent(categoryDifferentTextAndCode, genre).build());
+
+        var parentContent = contentRepository.save(buildContent(categoryDifferentTextAndCode, genre).name(UUID.randomUUID() + text + UUID.randomUUID())
+                                                                                                    .type(ContentType.SERIES)
+                                                                                                    .structureType(ContentStructureType.GROUP)
+                                                                                                    .build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content).sortOrder(1).build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content2).sortOrder(2).build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content3).sortOrder(3).disabledDate(LocalDateTime.now(clock)).build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content4).sortOrder(4).build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content5).sortOrder(5).build());
+
+        contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content2.getId().getId(), tag.getId().getId())).build());
+        contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content5.getId().getId(), tag2.getId().getId())).build());
+        contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content4.getId().getId(), tagWithDifferentTextAndTag.getId().getId())).build());
+
+        //when
+        var result = webTestClient.get()
+                                  .uri(uriBuilder -> uriBuilder.path("/api/content/search")
+                                                               .queryParam("text", text)
+                                                               .queryParam("tags", Set.of(tagCode))
+                                                               .queryParam("categories", Set.of(categoryCode))
+                                                               .build())
+                                  .accept(MediaType.APPLICATION_JSON)
+                                  .exchange()
+                                  .expectStatus()
+                                  .isOk()
+                                  .expectBody(ContentsDto.class)
+                                  .returnResult()
+                                  .getResponseBody();
+
+        //then
+        assertThat(result).isNotNull();
+        assertThat(result.isHasNext()).isFalse();
+        assertThat(result.getContents()).containsExactlyInAnyOrder(contentMapper.convertToDto(content2, parentContent.getId().getId()));
     }
 
 }

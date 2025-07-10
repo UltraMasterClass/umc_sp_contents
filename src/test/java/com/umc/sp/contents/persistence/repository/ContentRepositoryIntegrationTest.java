@@ -1,23 +1,32 @@
 package com.umc.sp.contents.persistence.repository;
 
 import com.umc.sp.contents.IntegrationTest;
+import com.umc.sp.contents.persistence.model.ContentTag;
+import com.umc.sp.contents.persistence.model.id.ContentTagId;
 import com.umc.sp.contents.persistence.model.type.ContentStructureType;
 import com.umc.sp.contents.persistence.model.type.ContentType;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
+import static com.umc.sp.contents.persistence.specification.ContentSpecifications.hasCategories;
+import static com.umc.sp.contents.persistence.specification.ContentSpecifications.hasTags;
+import static com.umc.sp.contents.persistence.specification.ContentSpecifications.searchOnTitleOrCategoryOrTagContains;
 import static org.assertj.core.api.Assertions.*;
 import static utils.ObjectTestUtils.buildCategory;
 import static utils.ObjectTestUtils.buildContent;
 import static utils.ObjectTestUtils.buildContentGroup;
 import static utils.ObjectTestUtils.buildContentInfo;
 import static utils.ObjectTestUtils.buildGenre;
+import static utils.ObjectTestUtils.buildTag;
 
 public class ContentRepositoryIntegrationTest implements IntegrationTest {
 
@@ -37,6 +46,12 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
     private ContentInfoRepository contentInfoRepository;
 
     @Autowired
+    private ContentTagRepository contentTagRepository;
+
+    @Autowired
+    private TagsRepository tagsRepository;
+
+    @Autowired
     private Clock clock;
 
     @BeforeEach
@@ -46,11 +61,13 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
 
     @AfterEach
     void cleanUp() {
+        contentTagRepository.deleteAll();
         contentGroupRepository.deleteAll();
         contentInfoRepository.deleteAll();
         contentRepository.deleteAll();
         genresRepository.deleteAll();
         categoriesRepository.deleteAll();
+        tagsRepository.deleteAll();
     }
 
     @Test
@@ -105,6 +122,106 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
         assertThat(result.hasNext()).isTrue();
         assertThat(result.getContent()).containsExactly(content, content2, content4);
 
+    }
+
+
+    @Test
+    @Transactional
+    void shouldFindAllByTag() {
+        //given
+        var tagCode = UUID.randomUUID().toString();
+        var tag = tagsRepository.save(buildTag().code(tagCode).build());
+        var tagWithDifferentText = tagsRepository.save(buildTag().build());
+        var category = categoriesRepository.save(buildCategory().build());
+        var genre = genresRepository.save(buildGenre().build());
+
+        var content = contentRepository.save(buildContent(category, genre).build());
+        var content2 = contentRepository.save(buildContent(category, genre).build());
+        var content3 = contentRepository.save(buildContent(category, genre).build());
+
+        var parentContent = contentRepository.save(buildContent(category, genre).type(ContentType.SERIES).structureType(ContentStructureType.GROUP).build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content).sortOrder(1).build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content2).sortOrder(2).build());
+
+        contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content.getId().getId(), tag.getId().getId())).build());
+        contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content2.getId().getId(), tagWithDifferentText.getId().getId())).build());
+        contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content3.getId().getId(), tag.getId().getId())).build());
+
+        //when
+        var contents = contentRepository.findAll(hasTags(Set.of(tagCode)), Pageable.unpaged());
+
+        //then
+        assertThat(contents.getContent()).containsExactlyInAnyOrder(content, content3);
+    }
+
+    @Test
+    @Transactional
+    void shouldFindAllByCategories() {
+        //given
+        var categoryCode = UUID.randomUUID().toString();
+        var category = categoriesRepository.save(buildCategory().code(categoryCode).build());
+        var categoryDifferentText = categoriesRepository.save(buildCategory().build());
+        var genre = genresRepository.save(buildGenre().build());
+
+        var content = contentRepository.save(buildContent(category, genre).build());
+        var content2 = contentRepository.save(buildContent(categoryDifferentText, genre).build());
+        var content3 = contentRepository.save(buildContent(category, genre).build());
+
+        var parentContent = contentRepository.save(buildContent(category, genre).type(ContentType.SERIES).structureType(ContentStructureType.GROUP).build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content).sortOrder(1).build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content2).sortOrder(2).build());
+
+        //when
+        var contents = contentRepository.findAll(hasCategories(Set.of(categoryCode)), Pageable.unpaged());
+
+        //then
+        assertThat(contents.getContent()).containsExactlyInAnyOrder(parentContent, content, content3);
+    }
+
+    @Test
+    @Transactional
+    void shouldFindAllBySearchText() {
+        //given
+        var text = UUID.randomUUID().toString();
+        var tag = tagsRepository.save(buildTag().code(text + UUID.randomUUID()).build());
+        var tag2 = tagsRepository.save(buildTag().code(UUID.randomUUID() + text).build());
+        var tagWithDifferentText = tagsRepository.save(buildTag().build());
+
+        var category = categoriesRepository.save(buildCategory().code(UUID.randomUUID() + text).build());
+        var category2 = categoriesRepository.save(buildCategory().code(text + UUID.randomUUID()).build());
+        var categoryDifferentText = categoriesRepository.save(buildCategory().code(UUID.randomUUID().toString()).build());
+
+        var genre = genresRepository.save(buildGenre().build());
+
+        var contentInfo = buildContentInfo().build();
+        var content = buildContent(category, genre).contentInfos(List.of(contentInfo)).build();
+        contentInfo.setContent(content);
+        content = contentRepository.save(content);
+        var content2 = contentRepository.save(buildContent(category, genre).build());
+        var content3 = contentRepository.save(buildContent(category2, genre).build());
+        // excluded tag, category and title do not contain the text to search
+        var content4 = contentRepository.save(buildContent(categoryDifferentText, genre).build());
+        var content5 = contentRepository.save(buildContent(categoryDifferentText, genre).build());
+
+        var parentContent = contentRepository.save(buildContent(categoryDifferentText, genre).name(UUID.randomUUID() + text + UUID.randomUUID())
+                                                                                             .type(ContentType.SERIES)
+                                                                                             .structureType(ContentStructureType.GROUP)
+                                                                                             .build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content).sortOrder(1).build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content2).sortOrder(2).build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content3).sortOrder(3).disabledDate(LocalDateTime.now(clock)).build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content4).sortOrder(4).build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content5).sortOrder(5).build());
+
+        contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content.getId().getId(), tag.getId().getId())).build());
+        contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content5.getId().getId(), tag2.getId().getId())).build());
+        contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content4.getId().getId(), tagWithDifferentText.getId().getId())).build());
+
+        //when
+        var contents = contentRepository.findAll(searchOnTitleOrCategoryOrTagContains(text), Pageable.unpaged());
+
+        //then
+        assertThat(contents.getContent()).containsExactlyInAnyOrder(content, content2, content3, content5, parentContent);
     }
 }
 
