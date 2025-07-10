@@ -6,10 +6,11 @@ import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface ContentRepository extends JpaRepository<Content, ContentId> {
+public interface ContentRepository extends JpaRepository<Content, ContentId>, JpaSpecificationExecutor<Content> {
 
     @Query(value = """
             SELECT c.*
