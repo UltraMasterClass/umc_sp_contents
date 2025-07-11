@@ -1,10 +1,13 @@
 package com.umc.sp.contents.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.umc.sp.contents.IntegrationTest;
 import com.umc.sp.contents.dto.response.ContentDetailDto;
 import com.umc.sp.contents.dto.response.ContentsDto;
+import com.umc.sp.contents.exception.ErrorResponse;
 import com.umc.sp.contents.mapper.ContentMapper;
 import com.umc.sp.contents.persistence.model.ContentTag;
+import com.umc.sp.contents.persistence.model.id.ContentId;
 import com.umc.sp.contents.persistence.model.id.ContentTagId;
 import com.umc.sp.contents.persistence.model.type.ContentStructureType;
 import com.umc.sp.contents.persistence.model.type.ContentType;
@@ -20,7 +23,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import org.json.JSONException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -87,7 +89,7 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
 
 
     @Test
-    void shouldGetContentById() throws JSONException {
+    void shouldGetContentById() {
         //given
         var tag = tagsRepository.save(buildTag().build());
         var category = categoriesRepository.save(buildCategory().build());
@@ -102,7 +104,7 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
 
         //when
         var result = webTestClient.get()
-                                  .uri("/api/content/{contentId}", content.getId())
+                                  .uri("/content/{contentId}", content.getId())
                                   .accept(MediaType.APPLICATION_JSON)
                                   .exchange()
                                   .expectStatus()
@@ -112,7 +114,27 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
                                   .getResponseBody();
 
         //then
-        assertThat(result).isEqualTo(contentMapper.convertToDetailDto(content, parentContent.getId().getId(), List.of(tag)));
+        assertThat(result).isEqualTo(contentMapper.convertToDetailDto(content, parentContent.getId().getId(), List.of(tag)).get());
+    }
+
+    @Test
+    void shouldGetErrorIFContentByIdNotFound() {
+        //given
+        var contentId = new ContentId();
+
+        //when
+        var result = webTestClient.get()
+                                  .uri("/content/{contentId}", contentId)
+                                  .accept(MediaType.APPLICATION_JSON)
+                                  .exchange()
+                                  .expectStatus()
+                                  .isNotFound()
+                                  .expectBody(ErrorResponse.class)
+                                  .returnResult()
+                                  .getResponseBody();
+
+        //then
+        assertThat(result).isEqualTo(new ErrorResponse(String.format("Content with id %s not found", contentId)));
     }
 
     @Test
@@ -139,15 +161,15 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         var contentGroup5 = contentGroupRepository.save(buildContentGroup(parentContent, content5).sortOrder(5).build());
 
         var expectedResult = ContentsDto.builder()
-                                        .contents(List.of(contentMapper.convertToDto(content, parentContent.getId().getId()),
-                                                          contentMapper.convertToDto(content2, parentContent.getId().getId()),
-                                                          contentMapper.convertToDto(content4, parentContent.getId().getId())))
+                                        .contents(List.of(contentMapper.convertToDto(content, parentContent.getId().getId()).get(),
+                                                          contentMapper.convertToDto(content2, parentContent.getId().getId()).get(),
+                                                          contentMapper.convertToDto(content4, parentContent.getId().getId()).get()))
                                         .hasNext(true)
                                         .build();
 
         //when
         var result = webTestClient.get()
-                                  .uri(uriBuilder -> uriBuilder.path(String.format("/api/content/%s/content", parentContent.getId()))
+                                  .uri(uriBuilder -> uriBuilder.path(String.format("/content/%s/children", parentContent.getId()))
                                                                .queryParam("offset", 0)
                                                                .queryParam("limit", 3)
                                                                .build())
@@ -204,7 +226,7 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
 
         //when
         var result = webTestClient.get()
-                                  .uri(uriBuilder -> uriBuilder.path("/api/content/search")
+                                  .uri(uriBuilder -> uriBuilder.path("/content/search")
                                                                .queryParam("text", text)
                                                                .queryParam("offset", 0)
                                                                .queryParam("limit", 4)
@@ -220,10 +242,10 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         //then
         assertThat(result).isNotNull();
         assertThat(result.isHasNext()).isTrue();
-        assertThat(result.getContents()).containsExactlyInAnyOrder(contentMapper.convertToDto(parentContent, null),
-                                                                   contentMapper.convertToDto(content, parentContent.getId().getId()),
-                                                                   contentMapper.convertToDto(content2, parentContent.getId().getId()),
-                                                                   contentMapper.convertToDto(content5, parentContent.getId().getId()));
+        assertThat(result.getContents()).containsExactlyInAnyOrder(contentMapper.convertToDto(parentContent, null).get(),
+                                                                   contentMapper.convertToDto(content, parentContent.getId().getId()).get(),
+                                                                   contentMapper.convertToDto(content2, parentContent.getId().getId()).get(),
+                                                                   contentMapper.convertToDto(content5, parentContent.getId().getId()).get());
     }
 
 
@@ -265,7 +287,7 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
 
         //when
         var result = webTestClient.get()
-                                  .uri(uriBuilder -> uriBuilder.path("/api/content/search")
+                                  .uri(uriBuilder -> uriBuilder.path("/content/search")
                                                                .queryParam("text", text)
                                                                .queryParam("tags", Set.of(tagCode))
                                                                .queryParam("categories", Set.of(categoryCode))
@@ -281,7 +303,7 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         //then
         assertThat(result).isNotNull();
         assertThat(result.isHasNext()).isFalse();
-        assertThat(result.getContents()).containsExactlyInAnyOrder(contentMapper.convertToDto(content2, parentContent.getId().getId()));
+        assertThat(result.getContents()).containsExactlyInAnyOrder(contentMapper.convertToDto(content2, parentContent.getId().getId()).get());
     }
 
 }

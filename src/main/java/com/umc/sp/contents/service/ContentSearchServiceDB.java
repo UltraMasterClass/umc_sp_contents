@@ -10,6 +10,7 @@ import com.umc.sp.contents.persistence.repository.ContentRepository;
 import com.umc.sp.contents.persistence.specification.ContentSpecifications;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -44,7 +45,11 @@ public class ContentSearchServiceDB implements ContentSearchService {
     private List<ContentDto> getContentDtos(final Page<Content> contents) {
         var contentIds = contents.stream().map(Content::getId).map(ContentId::getId).collect(Collectors.toSet());
         var parentContentIdByContentId = getParentContentIdByContentId(contentIds);
-        return contents.stream().map(content -> contentMapper.convertToDto(content, parentContentIdByContentId.get(content.getId().getId()))).toList();
+        return contents.stream()
+                       .map(content -> contentMapper.convertToDto(content, parentContentIdByContentId.get(content.getId().getId())))
+                       .filter(Optional::isPresent)
+                       .map(Optional::get)
+                       .toList();
     }
 
     private Map<UUID, UUID> getParentContentIdByContentId(final Set<UUID> contentIds) {

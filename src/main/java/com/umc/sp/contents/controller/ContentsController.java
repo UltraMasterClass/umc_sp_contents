@@ -4,7 +4,6 @@ import com.umc.sp.contents.dto.response.ContentDetailDto;
 import com.umc.sp.contents.dto.response.ContentsDto;
 import com.umc.sp.contents.manager.ContentServiceManager;
 import com.umc.sp.contents.persistence.model.id.ContentId;
-import java.time.Clock;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,14 +19,13 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @Validated
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/content")
 @RequiredArgsConstructor
 public class ContentsController {
 
-    private final Clock clock;
     private final ContentServiceManager contentServiceManager;
 
-    @RequestMapping(value = "/content/search", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/search", method = RequestMethod.GET, produces = "application/json")
     public Mono<ResponseEntity<ContentsDto>> searchContent(@RequestParam(required = false) String text,
                                                            @RequestParam(required = false) Set<String> tags,
                                                            @RequestParam(required = false) Set<String> categories,
@@ -36,23 +34,17 @@ public class ContentsController {
         return contentServiceManager.searchContent(tags, categories, text, offset, getLimit(limit)).map(contentsDto -> ResponseEntity.ok().body(contentsDto));
     }
 
-    @RequestMapping(value = "/content/{contentId}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/{contentId}", method = RequestMethod.GET, produces = "application/json")
     public Mono<ResponseEntity<ContentDetailDto>> getContentById(@PathVariable String contentId) {
         return contentServiceManager.getContentById(new ContentId(contentId)).map(contentDetailDto -> ResponseEntity.ok().body(contentDetailDto));
     }
 
-    @RequestMapping(value = "/content/{contentId}/content", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/{contentId}/children", method = RequestMethod.GET, produces = "application/json")
     public Mono<ResponseEntity<ContentsDto>> getContentByParentId(@PathVariable String contentId,
                                                                   @RequestParam(required = false, defaultValue = "0") int offset,
                                                                   @RequestParam(required = false, defaultValue = "20") int limit) {
         return contentServiceManager.getContentByParentId(new ContentId(contentId), offset, getLimit(limit))
-                                    .map(contentDetailDto -> ResponseEntity.ok().body(contentDetailDto))
-                                    // TODO: handle on controller advice
-                                    .onErrorResume(IllegalArgumentException.class, e -> Mono.just(ResponseEntity.badRequest().build()))
-                                    .onErrorResume(Exception.class, e -> {
-                                        log.error("Error retrieving content of parent content {}: ", contentId, e);
-                                        return Mono.just(ResponseEntity.internalServerError().build());
-                                    });
+                                    .map(contentDetailDto -> ResponseEntity.ok().body(contentDetailDto));
     }
 
     private int getLimit(final int limit) {
