@@ -2,11 +2,13 @@ package com.umc.sp.contents.service;
 
 import com.umc.sp.contents.dto.response.ContentDetailDto;
 import com.umc.sp.contents.dto.response.ContentsDto;
+import com.umc.sp.contents.exception.NotFoundException;
 import com.umc.sp.contents.mapper.ContentMapper;
 import com.umc.sp.contents.persistence.model.id.ContentId;
 import com.umc.sp.contents.persistence.repository.ContentGroupRepository;
 import com.umc.sp.contents.persistence.repository.ContentRepository;
 import com.umc.sp.contents.persistence.repository.TagsRepository;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -25,18 +27,22 @@ public class ContentService {
 
     @Transactional(readOnly = true)
     public ContentDetailDto getContentById(final ContentId id) {
-        // TODO: add custom exceptions and Advice handler
-        var content = contentRepository.findById(id).orElseThrow();
-        var contentTags = tagsRepository.findContentTagsByContentId(content.getId().getId());
-        var parentId = contentGroupRepository.findByIdContentId(id.getId()).map(contentGroup -> contentGroup.getId().getParentContentId()).orElse(null);
-        return contentMapper.convertToDetailDto(content, parentId, contentTags);
+        return contentRepository.findById(id).flatMap(content -> {
+            var contentTags = tagsRepository.findContentTagsByContentId(content.getId().getId());
+            var parentId = contentGroupRepository.findByIdContentId(id.getId()).map(contentGroup -> contentGroup.getId().getParentContentId()).orElse(null);
+            return contentMapper.convertToDetailDto(content, parentId, contentTags);
+        }).orElseThrow(() -> new NotFoundException(id));
     }
 
     @Transactional(readOnly = true)
     public ContentsDto getContentByParentId(final ContentId parentId, final int offset, final int limit) {
         var pageable = PageRequest.of(offset / limit, limit);
         var contents = contentRepository.findByParentIdAndDisableDateIsNull(parentId.getId(), pageable);
-        var dtos = contents.stream().map(content -> contentMapper.convertToDto(content, parentId.getId())).toList();
+        var dtos = contents.stream()
+                           .map(content -> contentMapper.convertToDto(content, parentId.getId()))
+                           .filter(Optional::isPresent)
+                           .map(Optional::get)
+                           .toList();
         return ContentsDto.builder().contents(dtos).hasNext(contents.hasNext()).build();
     }
 }
