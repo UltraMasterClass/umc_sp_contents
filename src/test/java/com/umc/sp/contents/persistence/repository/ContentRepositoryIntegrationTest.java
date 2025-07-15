@@ -2,7 +2,10 @@ package com.umc.sp.contents.persistence.repository;
 
 import com.umc.sp.contents.IntegrationTest;
 import com.umc.sp.contents.persistence.model.ContentTag;
+import com.umc.sp.contents.persistence.model.TagTranslation;
+import com.umc.sp.contents.persistence.model.id.CategoryId;
 import com.umc.sp.contents.persistence.model.id.ContentTagId;
+import com.umc.sp.contents.persistence.model.id.TagTranslationId;
 import com.umc.sp.contents.persistence.model.type.ContentStructureType;
 import com.umc.sp.contents.persistence.model.type.ContentType;
 import java.time.Clock;
@@ -52,6 +55,9 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
     private TagsRepository tagsRepository;
 
     @Autowired
+    private TagTranslationsRepository tagTranslationsRepository;
+
+    @Autowired
     private Clock clock;
 
     @BeforeEach
@@ -61,6 +67,7 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
 
     @AfterEach
     void cleanUp() {
+        tagTranslationsRepository.deleteAll();
         contentTagRepository.deleteAll();
         contentGroupRepository.deleteAll();
         contentInfoRepository.deleteAll();
@@ -129,8 +136,7 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
     @Transactional
     void shouldFindAllByTag() {
         //given
-        var tagCode = UUID.randomUUID().toString();
-        var tag = tagsRepository.save(buildTag().code(tagCode).build());
+        var tag = tagsRepository.save(buildTag().build());
         var tagWithDifferentText = tagsRepository.save(buildTag().build());
         var category = categoriesRepository.save(buildCategory().build());
         var genre = genresRepository.save(buildGenre().build());
@@ -148,7 +154,7 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
         contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content3.getId().getId(), tag.getId().getId())).build());
 
         //when
-        var contents = contentRepository.findAll(hasTags(Set.of(tagCode)), Pageable.unpaged());
+        var contents = contentRepository.findAll(hasTags(Set.of(tag.getId().getId())), Pageable.unpaged());
 
         //then
         assertThat(contents.getContent()).containsExactlyInAnyOrder(content, content3);
@@ -158,12 +164,12 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
     @Transactional
     void shouldFindAllByCategories() {
         //given
-        var categoryCode = UUID.randomUUID().toString();
-        var category = categoriesRepository.save(buildCategory().code(categoryCode).build());
+        var categoryId = new CategoryId();
+        var category = categoriesRepository.save(buildCategory().id(categoryId).build());
         var categoryDifferentText = categoriesRepository.save(buildCategory().build());
         var genre = genresRepository.save(buildGenre().build());
 
-        var content = contentRepository.save(buildContent(category, genre).build());
+        var content = contentRepository.save(buildContent(category, genre).categories(List.of(category, categoryDifferentText)).build());
         var content2 = contentRepository.save(buildContent(categoryDifferentText, genre).build());
         var content3 = contentRepository.save(buildContent(category, genre).build());
 
@@ -172,7 +178,7 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
         contentGroupRepository.save(buildContentGroup(parentContent, content2).sortOrder(2).build());
 
         //when
-        var contents = contentRepository.findAll(hasCategories(Set.of(categoryCode)), Pageable.unpaged());
+        var contents = contentRepository.findAll(hasCategories(Set.of(categoryId.getId())), Pageable.unpaged());
 
         //then
         assertThat(contents.getContent()).containsExactlyInAnyOrder(parentContent, content, content3);
@@ -183,13 +189,23 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
     void shouldFindAllBySearchText() {
         //given
         var text = UUID.randomUUID().toString();
-        var tag = tagsRepository.save(buildTag().code(text + UUID.randomUUID()).build());
-        var tag2 = tagsRepository.save(buildTag().code(UUID.randomUUID() + text).build());
+        var tag = tagsRepository.save(buildTag().build());
+        var tag2 = tagsRepository.save(buildTag().build());
         var tagWithDifferentText = tagsRepository.save(buildTag().build());
+
+        var tagTranslation = TagTranslation.builder().id(new TagTranslationId(tag.getId(), "es")).value(text + UUID.randomUUID()).tag(tag).build();
+        var tagTranslation2 = TagTranslation.builder().id(new TagTranslationId(tag2.getId(), "es")).value(UUID.randomUUID() + text).tag(tag2).build();
+        var tagTranslationDifferent = TagTranslation.builder()
+                                                    .id(new TagTranslationId(tagWithDifferentText.getId(), "es"))
+                                                    .value(UUID.randomUUID().toString())
+                                                    .tag(tagWithDifferentText)
+                                                    .build();
+
+        tagTranslationsRepository.saveAll(List.of(tagTranslation, tagTranslation2, tagTranslationDifferent));
 
         var category = categoriesRepository.save(buildCategory().code(UUID.randomUUID() + text).build());
         var category2 = categoriesRepository.save(buildCategory().code(text + UUID.randomUUID()).build());
-        var categoryDifferentText = categoriesRepository.save(buildCategory().code(UUID.randomUUID().toString()).build());
+        var categoryDifferentText = categoriesRepository.save(buildCategory().build());
 
         var genre = genresRepository.save(buildGenre().build());
 
@@ -218,10 +234,11 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
         contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content4.getId().getId(), tagWithDifferentText.getId().getId())).build());
 
         //when
-        var contents = contentRepository.findAll(searchOnTitleOrCategoryOrTagContains(text), Pageable.unpaged());
+        var contents = contentRepository.findAll(searchOnTitleOrCategoryOrTagContains(text, "es"), Pageable.unpaged());
 
         //then
-        assertThat(contents.getContent()).containsExactlyInAnyOrder(content, content2, content3, content5, parentContent);
+        assertThat(contents.getContent()).usingRecursiveFieldByFieldElementComparatorIgnoringFields(".contentInfos")
+                                         .containsExactlyInAnyOrder(content, content2, content3, content5, parentContent);
     }
 }
 

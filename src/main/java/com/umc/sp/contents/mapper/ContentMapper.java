@@ -47,7 +47,7 @@ public class ContentMapper {
             return Optional.empty();
         }
 
-        var categoryDto = categoryMapper.convertToDto(content.getCategory());
+        var categoryDtos = content.getCategories().stream().map(categoryMapper::convertToDto).filter(Optional::isPresent).map(Optional::get).toList();
         var genreDto = genreMapper.convertToDto(content.getGenre());
         return Optional.of(ContentDetailDto.builder()
                                            .id(content.getId().getId())
@@ -55,7 +55,7 @@ public class ContentMapper {
                                            .featured(content.isFeatured())
                                            .type(content.getType())
                                            .structureType(content.getStructureType())
-                                           .category(categoryDto.orElse(null))
+                                           .categories(categoryDtos)
                                            .name(content.getName())
                                            .description(content.getDescription())
                                            .genre(genreDto.orElse(null))

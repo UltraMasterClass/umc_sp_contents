@@ -14,6 +14,7 @@ import com.umc.sp.contents.persistence.model.id.GenresId;
 import com.umc.sp.contents.persistence.model.id.TagId;
 import com.umc.sp.contents.persistence.model.type.ContentStructureType;
 import com.umc.sp.contents.persistence.model.type.ContentType;
+import java.util.List;
 import java.util.UUID;
 import static com.umc.sp.contents.persistence.model.type.CategoryType.TOPIC;
 import static com.umc.sp.contents.persistence.model.type.ContentInfoType.RESOURCE_URL;
@@ -34,7 +35,7 @@ public class ObjectTestUtils {
                       .featured(true)
                       .type(ContentType.VIDEO)
                       .structureType(ContentStructureType.EPISODE)
-                      .category(category)
+                      .categories(List.of(category))
                       .name(UUID.randomUUID().toString())
                       .description(UUID.randomUUID().toString())
                       .genre(genre)

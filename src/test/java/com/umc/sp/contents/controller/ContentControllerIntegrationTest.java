@@ -1,14 +1,17 @@
 package com.umc.sp.contents.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.umc.sp.contents.IntegrationTest;
 import com.umc.sp.contents.dto.response.ContentDetailDto;
 import com.umc.sp.contents.dto.response.ContentsDto;
 import com.umc.sp.contents.exception.ErrorResponse;
 import com.umc.sp.contents.mapper.ContentMapper;
 import com.umc.sp.contents.persistence.model.ContentTag;
+import com.umc.sp.contents.persistence.model.TagTranslation;
+import com.umc.sp.contents.persistence.model.id.CategoryId;
 import com.umc.sp.contents.persistence.model.id.ContentId;
 import com.umc.sp.contents.persistence.model.id.ContentTagId;
+import com.umc.sp.contents.persistence.model.id.TagId;
+import com.umc.sp.contents.persistence.model.id.TagTranslationId;
 import com.umc.sp.contents.persistence.model.type.ContentStructureType;
 import com.umc.sp.contents.persistence.model.type.ContentType;
 import com.umc.sp.contents.persistence.repository.CategoriesRepository;
@@ -17,6 +20,7 @@ import com.umc.sp.contents.persistence.repository.ContentInfoRepository;
 import com.umc.sp.contents.persistence.repository.ContentRepository;
 import com.umc.sp.contents.persistence.repository.ContentTagRepository;
 import com.umc.sp.contents.persistence.repository.GenresRepository;
+import com.umc.sp.contents.persistence.repository.TagTranslationsRepository;
 import com.umc.sp.contents.persistence.repository.TagsRepository;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -66,6 +70,9 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
     private TagsRepository tagsRepository;
 
     @Autowired
+    private TagTranslationsRepository tagTranslationsRepository;
+
+    @Autowired
     private ContentMapper contentMapper;
 
     @Autowired
@@ -78,6 +85,7 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
 
     @AfterEach
     void cleanUp() {
+        tagTranslationsRepository.deleteAll();
         contentGroupRepository.deleteAll();
         contentInfoRepository.deleteAll();
         contentTagRepository.deleteAll();
@@ -193,6 +201,17 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         var tag2 = tagsRepository.save(buildTag().code(UUID.randomUUID() + text).build());
         var tagWithDifferentText = tagsRepository.save(buildTag().build());
 
+        var tagTranslation = TagTranslation.builder().id(new TagTranslationId(tag.getId(), "es")).value(text + UUID.randomUUID()).tag(tag).build();
+        var tagTranslation2 = TagTranslation.builder().id(new TagTranslationId(tag2.getId(), "es")).value(UUID.randomUUID() + text).tag(tag2).build();
+        var tagTranslationDifferent = TagTranslation.builder()
+                                                    .id(new TagTranslationId(tagWithDifferentText.getId(), "es"))
+                                                    .value(UUID.randomUUID().toString())
+                                                    .tag(tagWithDifferentText)
+                                                    .build();
+
+        tagTranslationsRepository.saveAll(List.of(tagTranslation, tagTranslation2, tagTranslationDifferent));
+
+
         var category = categoriesRepository.save(buildCategory().code(UUID.randomUUID() + text).build());
         var category2 = categoriesRepository.save(buildCategory().code(text + UUID.randomUUID()).build());
         var categoryDifferentText = categoriesRepository.save(buildCategory().code(UUID.randomUUID().toString()).build());
@@ -253,14 +272,24 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
     void shouldSearchContentFilteredByTagAndCategory() {
         //given
         var text = UUID.randomUUID().toString();
-        var categoryCode = UUID.randomUUID().toString();
-        var tagCode = UUID.randomUUID().toString();
+        var categoryId = new CategoryId();
+        var tagId = new TagId();
 
-        var tag = tagsRepository.save(buildTag().code(tagCode).build());
-        var tag2 = tagsRepository.save(buildTag().code(UUID.randomUUID() + text).build());
+        var tag = tagsRepository.save(buildTag().id(tagId).build());
+        var tag2 = tagsRepository.save(buildTag().build());
         var tagWithDifferentTextAndTag = tagsRepository.save(buildTag().build());
 
-        var category = categoriesRepository.save(buildCategory().code(categoryCode).build());
+        var tagTranslation = TagTranslation.builder().id(new TagTranslationId(tag.getId(), "es")).tag(tag).build();
+        var tagTranslation2 = TagTranslation.builder().id(new TagTranslationId(tag2.getId(), "es")).value(UUID.randomUUID() + text).tag(tag2).build();
+        var tagTranslationDifferent = TagTranslation.builder()
+                                                    .id(new TagTranslationId(tagWithDifferentTextAndTag.getId(), "es"))
+                                                    .value(UUID.randomUUID().toString())
+                                                    .tag(tagWithDifferentTextAndTag)
+                                                    .build();
+
+        tagTranslationsRepository.saveAll(List.of(tagTranslation, tagTranslation2, tagTranslationDifferent));
+
+        var category = categoriesRepository.save(buildCategory().id(categoryId).build());
         var category2 = categoriesRepository.save(buildCategory().code(text + UUID.randomUUID()).build());
         var categoryDifferentTextAndCode = categoriesRepository.save(buildCategory().code(UUID.randomUUID().toString()).build());
         var genre = genresRepository.save(buildGenre().build());
@@ -289,8 +318,8 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         var result = webTestClient.get()
                                   .uri(uriBuilder -> uriBuilder.path("/content/search")
                                                                .queryParam("text", text)
-                                                               .queryParam("tags", Set.of(tagCode))
-                                                               .queryParam("categories", Set.of(categoryCode))
+                                                               .queryParam("tags", Set.of(tagId))
+                                                               .queryParam("categories", Set.of(categoryId.getId()))
                                                                .build())
                                   .accept(MediaType.APPLICATION_JSON)
                                   .exchange()

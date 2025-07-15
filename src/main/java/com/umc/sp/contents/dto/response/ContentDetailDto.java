@@ -11,7 +11,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ContentDetailDto extends ContentDto{
-    private CategoryDto category;
+    private List<CategoryDto> categories;
     private GenreDto genre;
     private List<TagDto> tags;
 }

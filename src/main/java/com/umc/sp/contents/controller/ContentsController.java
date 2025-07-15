@@ -5,6 +5,7 @@ import com.umc.sp.contents.dto.response.ContentsDto;
 import com.umc.sp.contents.manager.ContentServiceManager;
 import com.umc.sp.contents.persistence.model.id.ContentId;
 import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -27,11 +28,13 @@ public class ContentsController {
 
     @RequestMapping(value = "/search", method = RequestMethod.GET, produces = "application/json")
     public Mono<ResponseEntity<ContentsDto>> searchContent(@RequestParam(required = false) String text,
-                                                           @RequestParam(required = false) Set<String> tags,
-                                                           @RequestParam(required = false) Set<String> categories,
+                                                           @RequestParam(required = false, defaultValue = "es") String langCode,
+                                                           @RequestParam(required = false) Set<UUID> tags,
+                                                           @RequestParam(required = false) Set<UUID> categories,
                                                            @RequestParam(required = false, defaultValue = "0") int offset,
                                                            @RequestParam(required = false, defaultValue = "20") int limit) {
-        return contentServiceManager.searchContent(tags, categories, text, offset, getLimit(limit)).map(contentsDto -> ResponseEntity.ok().body(contentsDto));
+        return contentServiceManager.searchContent(tags, categories, text, langCode, offset, getLimit(limit))
+                                    .map(contentsDto -> ResponseEntity.ok().body(contentsDto));
     }
 
     @RequestMapping(value = "/{contentId}", method = RequestMethod.GET, produces = "application/json")
