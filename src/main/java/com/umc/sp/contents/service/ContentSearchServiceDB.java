@@ -34,9 +34,9 @@ public class ContentSearchServiceDB implements ContentSearchService {
     private final ContentMapper contentMapper;
 
     @Override
-    public ContentsDto searchContent(final Set<String> tagCodes, final Set<String> categoryNames, final String search, final int offset, final int limit) {
+    public ContentsDto searchContent(final Set<UUID> tagCodes, final Set<UUID> categoryIds, final String search, final String langCode, final int offset, final int limit) {
         var pageable = PageRequest.of(offset / limit, limit, Sort.by("name").ascending());
-        var contentSpecification = buildSearchQuery(tagCodes, categoryNames, search);
+        var contentSpecification = buildSearchQuery(tagCodes, categoryIds, search, langCode);
         var contents = contentRepository.findAll(contentSpecification, pageable);
         return ContentsDto.builder().contents(getContentDtos(contents)).hasNext(contents.hasNext()).build();
     }
@@ -60,16 +60,16 @@ public class ContentSearchServiceDB implements ContentSearchService {
                                                                (o, o2) -> o2));
     }
 
-    private Specification<Content> buildSearchQuery(final Set<String> tagCodes, final Set<String> categoryNames, final String search) {
+    private Specification<Content> buildSearchQuery(final Set<UUID> tagCodes, final Set<UUID> categoryIds, final String search, final String langCode) {
         Specification<Content> spec = (root, query, cb) -> cb.conjunction();
         if (isNotEmpty(tagCodes)) {
             spec = spec.and(ContentSpecifications.hasTags(tagCodes));
         }
-        if (isNotEmpty(categoryNames)) {
-            spec = spec.and(ContentSpecifications.hasCategories(categoryNames));
+        if (isNotEmpty(categoryIds)) {
+            spec = spec.and(ContentSpecifications.hasCategories(categoryIds));
         }
         if (isNotBlank(search)) {
-            spec = spec.and(ContentSpecifications.searchOnTitleOrCategoryOrTagContains(search));
+            spec = spec.and(ContentSpecifications.searchOnTitleOrCategoryOrTagContains(search,langCode));
         }
         return spec;
     }

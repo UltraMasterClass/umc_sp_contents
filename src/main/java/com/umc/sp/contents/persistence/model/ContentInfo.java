@@ -14,7 +14,9 @@ import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 @Data
@@ -29,6 +31,8 @@ public class ContentInfo {
     @AttributeOverride(name = "id", column = @Column(name = "id"))
     private ContentInfoId id;
 
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "content_id", nullable = false)
     private Content content;

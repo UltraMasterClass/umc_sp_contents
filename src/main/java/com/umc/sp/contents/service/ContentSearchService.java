@@ -2,7 +2,8 @@ package com.umc.sp.contents.service;
 
 import com.umc.sp.contents.dto.response.ContentsDto;
 import java.util.Set;
+import java.util.UUID;
 
 public interface ContentSearchService {
-    ContentsDto searchContent(final Set<String> tagCodes, final Set<String> categoryNames, final String search, final int offset, final int limit);
+    ContentsDto searchContent(final Set<UUID> tagCodes, final Set<UUID> categoryIds, final String search, final String langCode, final int offset, final int limit);
 }

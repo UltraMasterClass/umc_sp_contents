@@ -49,10 +49,24 @@ CREATE TRIGGER update_timestamp BEFORE UPDATE ON tags FOR EACH ROW EXECUTE PROCE
 
 CREATE UNIQUE INDEX udx_tags_code  ON tags(code);
 
+-- tag_translation table
+CREATE TABLE tag_translations (
+    tag_id UUID NOT NULL,
+    language_code VARCHAR(10) NOT NULL,
+    value VARCHAR(255),
+    disable_date TIMESTAMP,
+    create_date TIMESTAMP NOT NULL,
+    update_date TIMESTAMP NOT NULL,
+    PRIMARY KEY (tag_id, language_code),
+    FOREIGN KEY (tag_id) REFERENCES tags(id)
+);
+
+CREATE TRIGGER insert_timestamp BEFORE INSERT ON tag_translations FOR EACH ROW EXECUTE PROCEDURE insert_timestamps();
+CREATE TRIGGER update_timestamp BEFORE UPDATE ON tag_translations FOR EACH ROW EXECUTE PROCEDURE update_timestamps();
+
 -- contents table
 CREATE TABLE contents (
     id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
-    category_id UUID NOT NULL REFERENCES categories(id),
     genre_id UUID NOT NULL REFERENCES genres(id),
     speciality_id UUID NOT NULL,
     type VARCHAR(45),
@@ -69,7 +83,6 @@ CREATE TRIGGER update_timestamp BEFORE UPDATE ON contents FOR EACH ROW EXECUTE P
 
 CREATE INDEX idx_contents_type  ON contents(type);
 CREATE INDEX idx_contents_featured  ON contents(featured);
-CREATE INDEX idx_contents_category_id  ON contents(category_id);
 CREATE INDEX idx_contents_genre_id  ON contents(genre_id);
 CREATE INDEX idx_contents_speciality_id  ON contents(speciality_id);
 
@@ -130,6 +143,20 @@ CREATE TRIGGER insert_timestamp BEFORE INSERT ON subtitles FOR EACH ROW EXECUTE 
 CREATE TRIGGER update_timestamp BEFORE UPDATE ON subtitles FOR EACH ROW EXECUTE PROCEDURE update_timestamps();
 
 CREATE UNIQUE INDEX udx_subtitles_content_id_language_code  ON subtitles(content_id,language_code);
+
+-- content_categories table
+CREATE TABLE content_categories (
+    content_id UUID NOT NULL,
+    category_id UUID NOT NULL,
+    disabled_date TIMESTAMP,
+    create_date TIMESTAMP NOT NULL,
+    update_date TIMESTAMP NOT NULL,
+    PRIMARY KEY (content_id, category_id),
+    FOREIGN KEY (content_id) REFERENCES contents(id),
+    FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+CREATE TRIGGER insert_timestamp BEFORE INSERT ON content_categories FOR EACH ROW EXECUTE PROCEDURE insert_timestamps();
+CREATE TRIGGER update_timestamp BEFORE UPDATE ON content_categories FOR EACH ROW EXECUTE PROCEDURE update_timestamps();
 
 -- content_sections table
 CREATE TABLE content_sections (

@@ -6,6 +6,7 @@ import com.umc.sp.contents.persistence.model.id.ContentId;
 import com.umc.sp.contents.service.ContentSearchService;
 import com.umc.sp.contents.service.ContentService;
 import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -25,11 +26,12 @@ public class ContentServiceManager {
         return Mono.just(contentService.getContentByParentId(parentId, offset, limit));
     }
 
-    public Mono<ContentsDto> searchContent(final Set<String> tagCodes,
-                                           final Set<String> categoryNames,
+    public Mono<ContentsDto> searchContent(final Set<UUID> tagCodes,
+                                           final Set<UUID> categoryIds,
                                            final String search,
+                                           final String langCode,
                                            final int offset,
                                            final int limit) {
-        return Mono.just(contentSearchService.searchContent(tagCodes, categoryNames, search, offset, limit));
+        return Mono.just(contentSearchService.searchContent(tagCodes, categoryIds, search, langCode, offset, limit));
     }
 }
