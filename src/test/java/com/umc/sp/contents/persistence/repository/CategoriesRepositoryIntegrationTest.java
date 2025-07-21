@@ -1,6 +1,7 @@
 package com.umc.sp.contents.persistence.repository;
 
 import com.umc.sp.contents.IntegrationTest;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,5 +36,37 @@ public class CategoriesRepositoryIntegrationTest implements IntegrationTest {
         //then
         assertThat(result).get().isEqualTo(saved);
         assertThat(result).get().isEqualTo(category);
+    }
+
+
+    @Test
+    void shouldCheckCategoriesNotParentAndChildrenOfEachOther() {
+        //given
+        var parentCategory = categoriesRepository.save(buildCategory().build());
+        var category = categoriesRepository.save(buildCategory().parent(parentCategory).build());
+        var category2 = categoriesRepository.save(buildCategory().build());
+
+        //when
+        var result = categoriesRepository.checkCategoriesNotParentAndChildrenOfEachOther(Set.of(category.getId().getId(), category2.getId().getId()));
+
+        //then
+        assertThat(result).isTrue();
+    }
+
+
+    @Test
+    void shouldCheckCategoriesNotParentAndChildrenOfEachOtherAndFailIForHierarchyRelated() {
+        //given
+        var parentCategory = categoriesRepository.save(buildCategory().build());
+        var category = categoriesRepository.save(buildCategory().parent(parentCategory).build());
+        var category2 = categoriesRepository.save(buildCategory().build());
+
+        //when
+        var result = categoriesRepository.checkCategoriesNotParentAndChildrenOfEachOther(Set.of(category.getId().getId(),
+                                                                                                category2.getId().getId(),
+                                                                                                parentCategory.getId().getId()));
+
+        //then
+        assertThat(result).isFalse();
     }
 }

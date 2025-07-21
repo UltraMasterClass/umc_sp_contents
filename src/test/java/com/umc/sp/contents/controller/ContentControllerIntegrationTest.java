@@ -1,7 +1,11 @@
 package com.umc.sp.contents.controller;
 
 import com.umc.sp.contents.IntegrationTest;
+import com.umc.sp.contents.dto.request.CreateContentDto;
+import com.umc.sp.contents.dto.request.CreateContentInfoDto;
 import com.umc.sp.contents.dto.response.ContentDetailDto;
+import com.umc.sp.contents.dto.response.ContentInfoDto;
+import com.umc.sp.contents.dto.response.ContentResourcesDto;
 import com.umc.sp.contents.dto.response.ContentsDto;
 import com.umc.sp.contents.exception.ErrorResponse;
 import com.umc.sp.contents.mapper.ContentMapper;
@@ -12,6 +16,7 @@ import com.umc.sp.contents.persistence.model.id.ContentId;
 import com.umc.sp.contents.persistence.model.id.ContentTagId;
 import com.umc.sp.contents.persistence.model.id.TagId;
 import com.umc.sp.contents.persistence.model.id.TagTranslationId;
+import com.umc.sp.contents.persistence.model.type.ContentInfoType;
 import com.umc.sp.contents.persistence.model.type.ContentStructureType;
 import com.umc.sp.contents.persistence.model.type.ContentType;
 import com.umc.sp.contents.persistence.repository.CategoriesRepository;
@@ -33,9 +38,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import static com.umc.sp.contents.persistence.model.type.ContentInfoType.LARGE_COVER_IMG_URL;
+import static com.umc.sp.contents.persistence.model.type.ContentInfoType.LOGO_IMG_URL;
+import static com.umc.sp.contents.persistence.model.type.ContentInfoType.RESOURCE_URL;
+import static com.umc.sp.contents.persistence.model.type.ContentInfoType.SMALL_COVER_IMG_URL;
+import static com.umc.sp.contents.persistence.model.type.ContentInfoType.THUMBNAIL_IMG_URL;
 import static com.umc.sp.contents.persistence.model.type.ContentStructureType.*;
 import static com.umc.sp.contents.persistence.model.type.ContentType.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.http.HttpStatus.CONFLICT;
 import static utils.ObjectTestUtils.buildCategory;
 import static utils.ObjectTestUtils.buildContent;
 import static utils.ObjectTestUtils.buildContentGroup;
@@ -101,13 +112,19 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         //given
         var tag = tagsRepository.save(buildTag().build());
         var category = categoriesRepository.save(buildCategory().build());
+        var category2 = categoriesRepository.save(buildCategory().build());
         var genre = genresRepository.save(buildGenre().build());
-        var parentContent = contentRepository.save(buildContent(category, genre).type(SERIES).structureType(GROUP).build());
+        var parentContent = contentRepository.save(buildContent(category, genre).type(EXPERT).structureType(GROUP).build());
+        var parentContent2 = contentRepository.save(buildContent(category, genre).type(EXPERT).structureType(GROUP).build());
         var contentInfo = buildContentInfo().build();
-        var content = buildContent(category, genre).contentInfos(List.of(contentInfo)).build();
+        var content = buildContent(category, genre).structureType(INDIVIDUAL)
+                                                   .contentInfos(List.of(contentInfo))
+                                                   .categories(List.of(category, category2))
+                                                   .build();
         contentInfo.setContent(content);
         content = contentRepository.save(content);
         var contentGroup = contentGroupRepository.save(buildContentGroup(parentContent, content).build());
+        var contentGroup2 = contentGroupRepository.save(buildContentGroup(parentContent2, content).build());
         var contentTag = contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content.getId().getId(), tag.getId().getId())).build());
 
         //when
@@ -122,7 +139,9 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
                                   .getResponseBody();
 
         //then
-        assertThat(result).isEqualTo(contentMapper.convertToDetailDto(content, parentContent.getId().getId(), List.of(tag)).get());
+        assertThat(result).isEqualTo(contentMapper.convertToDetailDto(content,
+                                                                      Set.of(parentContent.getId().getId(), parentContent2.getId().getId()),
+                                                                      List.of(tag)).get());
     }
 
     @Test
@@ -169,9 +188,9 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         var contentGroup5 = contentGroupRepository.save(buildContentGroup(parentContent, content5).sortOrder(5).build());
 
         var expectedResult = ContentsDto.builder()
-                                        .contents(List.of(contentMapper.convertToDto(content, parentContent.getId().getId()).get(),
-                                                          contentMapper.convertToDto(content2, parentContent.getId().getId()).get(),
-                                                          contentMapper.convertToDto(content4, parentContent.getId().getId()).get()))
+                                        .contents(List.of(contentMapper.convertToDto(content, Set.of(parentContent.getId().getId())).get(),
+                                                          contentMapper.convertToDto(content2, Set.of(parentContent.getId().getId())).get(),
+                                                          contentMapper.convertToDto(content4, Set.of(parentContent.getId().getId())).get()))
                                         .hasNext(true)
                                         .build();
 
@@ -262,9 +281,9 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         assertThat(result).isNotNull();
         assertThat(result.isHasNext()).isTrue();
         assertThat(result.getContents()).containsExactlyInAnyOrder(contentMapper.convertToDto(parentContent, null).get(),
-                                                                   contentMapper.convertToDto(content, parentContent.getId().getId()).get(),
-                                                                   contentMapper.convertToDto(content2, parentContent.getId().getId()).get(),
-                                                                   contentMapper.convertToDto(content5, parentContent.getId().getId()).get());
+                                                                   contentMapper.convertToDto(content, Set.of(parentContent.getId().getId())).get(),
+                                                                   contentMapper.convertToDto(content2, Set.of(parentContent.getId().getId())).get(),
+                                                                   contentMapper.convertToDto(content5, Set.of(parentContent.getId().getId())).get());
     }
 
 
@@ -332,7 +351,262 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         //then
         assertThat(result).isNotNull();
         assertThat(result.isHasNext()).isFalse();
-        assertThat(result.getContents()).containsExactlyInAnyOrder(contentMapper.convertToDto(content2, parentContent.getId().getId()).get());
+        assertThat(result.getContents()).containsExactlyInAnyOrder(contentMapper.convertToDto(content2, Set.of(parentContent.getId().getId())).get());
+    }
+
+
+    @Test
+    void shouldCreateExpertContent() {
+        //given
+        var tag = tagsRepository.save(buildTag().build());
+        var category = categoriesRepository.save(buildCategory().build());
+        var category2 = categoriesRepository.save(buildCategory().build());
+        var request = CreateContentDto.builder()
+                                      .name(UUID.randomUUID().toString())
+                                      .description(UUID.randomUUID().toString())
+                                      .type(EXPERT)
+                                      .structureType(GROUP)
+                                      .categories(Set.of(category.getId().getId(), category2.getId().getId()))
+                                      .attributes(Set.of(CreateContentInfoDto.builder()
+                                                                             .type(ContentInfoType.EXPERTS)
+                                                                             .value(UUID.randomUUID().toString())
+                                                                             .build()))
+                                      .tags(Set.of(tag.getId().getId()))
+                                      .build();
+
+        //when
+        var result = webTestClient.post()
+                                  .uri("/content")
+                                  .accept(MediaType.APPLICATION_JSON)
+                                  .contentType(MediaType.APPLICATION_JSON)
+                                  .bodyValue(request)
+                                  .exchange()
+                                  .expectStatus()
+                                  .isOk()
+                                  .expectBody(ContentResourcesDto.class)
+                                  .returnResult()
+                                  .getResponseBody();
+
+        //then
+        var contents = contentRepository.findAll();
+        assertThat(contents).hasSize(1);
+        var createdContent = contents.get(0);
+        assertThat(result.getId()).isEqualTo(createdContent.getId().getId());
+        assertThat(result.getResources()).usingRecursiveFieldByFieldElementComparatorIgnoringFields("id")
+                                         .containsExactlyInAnyOrder(ContentInfoDto.builder()
+                                                                                  .type(SMALL_COVER_IMG_URL)
+                                                                                  .value(String.format("https://test/assets/experts/%s/images/profile_image.jpg",
+                                                                                                       createdContent.getId()))
+                                                                                  .build());
+    }
+
+
+    @Test
+    void shouldCreateSeriesContent() {
+        //given
+        var tag = tagsRepository.save(buildTag().build());
+        var category = categoriesRepository.save(buildCategory().build());
+        var category2 = categoriesRepository.save(buildCategory().build());
+        var request = CreateContentDto.builder()
+                                      .name(UUID.randomUUID().toString())
+                                      .description(UUID.randomUUID().toString())
+                                      .type(SERIES)
+                                      .structureType(GROUP)
+                                      .categories(Set.of(category.getId().getId(), category2.getId().getId()))
+                                      .attributes(Set.of(CreateContentInfoDto.builder()
+                                                                             .type(ContentInfoType.EXPERTS)
+                                                                             .value(UUID.randomUUID().toString())
+                                                                             .build()))
+                                      .tags(Set.of(tag.getId().getId()))
+                                      .build();
+
+        //when
+        var result = webTestClient.post()
+                                  .uri("/content")
+                                  .accept(MediaType.APPLICATION_JSON)
+                                  .contentType(MediaType.APPLICATION_JSON)
+                                  .bodyValue(request)
+                                  .exchange()
+                                  .expectStatus()
+                                  .isOk()
+                                  .expectBody(ContentResourcesDto.class)
+                                  .returnResult()
+                                  .getResponseBody();
+
+        //then
+        var contents = contentRepository.findAll();
+        assertThat(contents).hasSize(1);
+        var createdContent = contents.get(0);
+        assertThat(result.getId()).isEqualTo(createdContent.getId().getId());
+        assertThat(result.getResources()).usingRecursiveFieldByFieldElementComparatorIgnoringFields("id")
+                                         .containsExactlyInAnyOrder(ContentInfoDto.builder()
+                                                                                  .type(LOGO_IMG_URL)
+                                                                                  .value(String.format("https://test/assets/series/%s/images/logo.svg",
+                                                                                                       createdContent.getId()))
+                                                                                  .build(),
+                                                                    ContentInfoDto.builder()
+                                                                                  .type(THUMBNAIL_IMG_URL)
+                                                                                  .value(String.format("https://test/assets/series/%s/images/thumbnail.jpg",
+                                                                                                       createdContent.getId()))
+                                                                                  .build(),
+                                                                    ContentInfoDto.builder()
+                                                                                  .type(SMALL_COVER_IMG_URL)
+                                                                                  .value(String.format("https://test/assets/series/%s/images/small_cover.jpg",
+                                                                                                       createdContent.getId()))
+                                                                                  .build(),
+
+                                                                    ContentInfoDto.builder()
+                                                                                  .type(LARGE_COVER_IMG_URL)
+                                                                                  .value(String.format("https://test/assets/series/%s/images/large_cover.jpg",
+                                                                                                       createdContent.getId()))
+                                                                                  .build());
+    }
+
+
+    @Test
+    void shouldCreateVideoContent() {
+        //given
+        var tag = tagsRepository.save(buildTag().build());
+        var category = categoriesRepository.save(buildCategory().build());
+        var category2 = categoriesRepository.save(buildCategory().build());
+        var request = CreateContentDto.builder()
+                                      .name(UUID.randomUUID().toString())
+                                      .description(UUID.randomUUID().toString())
+                                      .type(VIDEO)
+                                      .structureType(INDIVIDUAL)
+                                      .categories(Set.of(category.getId().getId(), category2.getId().getId()))
+                                      .attributes(Set.of(CreateContentInfoDto.builder()
+                                                                             .type(ContentInfoType.EXPERTS)
+                                                                             .value(UUID.randomUUID().toString())
+                                                                             .build()))
+                                      .tags(Set.of(tag.getId().getId()))
+                                      .build();
+
+        //when
+        var result = webTestClient.post()
+                                  .uri("/content")
+                                  .accept(MediaType.APPLICATION_JSON)
+                                  .contentType(MediaType.APPLICATION_JSON)
+                                  .bodyValue(request)
+                                  .exchange()
+                                  .expectStatus()
+                                  .isOk()
+                                  .expectBody(ContentResourcesDto.class)
+                                  .returnResult()
+                                  .getResponseBody();
+
+        //then
+        var contents = contentRepository.findAll();
+        assertThat(contents).hasSize(1);
+        var createdContent = contents.get(0);
+        assertThat(result.getId()).isEqualTo(createdContent.getId().getId());
+        assertThat(result.getResources()).usingRecursiveFieldByFieldElementComparatorIgnoringFields("id")
+                                         .containsExactlyInAnyOrder(ContentInfoDto.builder()
+                                                                                  .type(RESOURCE_URL)
+                                                                                  .value(String.format("https://test/content/videos/%s/",
+                                                                                                       createdContent.getId()))
+                                                                                  .build(),
+                                                                    ContentInfoDto.builder()
+                                                                                  .type(THUMBNAIL_IMG_URL)
+                                                                                  .value(String.format("https://test/assets/videos/%s/images/thumbnail.jpg",
+                                                                                                       createdContent.getId()))
+                                                                                  .build(),
+                                                                    ContentInfoDto.builder()
+                                                                                  .type(SMALL_COVER_IMG_URL)
+                                                                                  .value(String.format("https://test/assets/videos/%s/images/small_cover.jpg",
+                                                                                                       createdContent.getId()))
+                                                                                  .build(),
+
+                                                                    ContentInfoDto.builder()
+                                                                                  .type(LARGE_COVER_IMG_URL)
+                                                                                  .value(String.format("https://test/assets/videos/%s/images/large_cover.jpg",
+                                                                                                       createdContent.getId()))
+                                                                                  .build());
+    }
+
+
+    @Test
+    void shouldNotCreateContentIfGivenCategoriesAreHierarchicallyRelated() {
+        //given
+        var tag = tagsRepository.save(buildTag().build());
+        var parentCategory = categoriesRepository.save(buildCategory().build());
+        var category = categoriesRepository.save(buildCategory().parent(parentCategory).build());
+        var category2 = categoriesRepository.save(buildCategory().build());
+        var request = CreateContentDto.builder()
+                                      .name(UUID.randomUUID().toString())
+                                      .description(UUID.randomUUID().toString())
+                                      .type(VIDEO)
+                                      .structureType(INDIVIDUAL)
+                                      .categories(Set.of(category.getId().getId(), category2.getId().getId(), parentCategory.getId().getId()))
+                                      .attributes(Set.of(CreateContentInfoDto.builder()
+                                                                             .type(ContentInfoType.EXPERTS)
+                                                                             .value(UUID.randomUUID().toString())
+                                                                             .build()))
+                                      .tags(Set.of(tag.getId().getId()))
+                                      .build();
+
+        //when
+        var result = webTestClient.post()
+                                  .uri("/content")
+                                  .accept(MediaType.APPLICATION_JSON)
+                                  .contentType(MediaType.APPLICATION_JSON)
+                                  .bodyValue(request)
+                                  .exchange()
+                                  .expectStatus()
+                                  .isEqualTo(CONFLICT)
+                                  .expectBody(ErrorResponse.class)
+                                  .returnResult()
+                                  .getResponseBody();
+
+        //then
+        assertThat(result).isEqualTo(new ErrorResponse("Given categories must not be parents of each other"));
+        var contents = contentRepository.findAll();
+        assertThat(contents).isEmpty();
+    }
+
+    @Test
+    void shouldNotCreateContentIfGivenParentsAreHierarchicallyRelated() {
+        //given
+        var tag = tagsRepository.save(buildTag().build());
+        var category = categoriesRepository.save(buildCategory().build());
+        var category2 = categoriesRepository.save(buildCategory().build());
+
+        var genre = genresRepository.save(buildGenre().build());
+        var parentContent = contentRepository.save(buildContent(category, genre).type(EXPERT).structureType(GROUP).build());
+        var content = contentRepository.save(buildContent(category, genre).structureType(INDIVIDUAL).build());
+        contentGroupRepository.save(buildContentGroup(parentContent, content).build());
+
+        var request = CreateContentDto.builder()
+                                      .name(UUID.randomUUID().toString())
+                                      .description(UUID.randomUUID().toString())
+                                      .type(VIDEO)
+                                      .structureType(EPISODE)
+                                      .categories(Set.of(category.getId().getId(), category2.getId().getId()))
+                                      .attributes(Set.of(CreateContentInfoDto.builder()
+                                                                             .type(ContentInfoType.EXPERTS)
+                                                                             .value(UUID.randomUUID().toString())
+                                                                             .build()))
+                                      .parentContents(Set.of(parentContent.getId().getId(), content.getId().getId()))
+                                      .tags(Set.of(tag.getId().getId()))
+                                      .build();
+
+        //when
+        var result = webTestClient.post()
+                                  .uri("/content")
+                                  .accept(MediaType.APPLICATION_JSON)
+                                  .contentType(MediaType.APPLICATION_JSON)
+                                  .bodyValue(request)
+                                  .exchange()
+                                  .expectStatus()
+                                  .isEqualTo(CONFLICT)
+                                  .expectBody(ErrorResponse.class)
+                                  .returnResult()
+                                  .getResponseBody();
+
+        //then
+        assertThat(result).isEqualTo(new ErrorResponse("Given parent contents must not be parents of each other"));
+        var contents = contentRepository.findAll();
+        assertThat(contents).hasSize(2);
     }
 
 }

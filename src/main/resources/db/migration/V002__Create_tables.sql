@@ -40,6 +40,7 @@ CREATE TABLE tags (
     id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
     code VARCHAR(100) NOT NULL,
     description TEXT,
+    global BOOLEAN NOT NULL,
     create_date TIMESTAMP NOT NULL,
     update_date TIMESTAMP NOT NULL
 );
@@ -67,7 +68,7 @@ CREATE TRIGGER update_timestamp BEFORE UPDATE ON tag_translations FOR EACH ROW E
 -- contents table
 CREATE TABLE contents (
     id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
-    genre_id UUID NOT NULL REFERENCES genres(id),
+    genre_id UUID REFERENCES genres(id),
     speciality_id UUID NOT NULL,
     type VARCHAR(45),
     structure_type VARCHAR(45),

@@ -79,7 +79,7 @@ public class ContentGroupsRepositoryIntegrationTest implements IntegrationTest {
         var result = contentGroupRepository.findByIdContentId(content.getId().getId());
 
         //then
-        assertThat(result).get().isEqualTo(contentGroup);
+        assertThat(result).usingRecursiveFieldByFieldElementComparator().containsExactly(contentGroup);
     }
 
     @Test
@@ -100,5 +100,49 @@ public class ContentGroupsRepositoryIntegrationTest implements IntegrationTest {
 
         //then
         assertThat(result).containsExactlyInAnyOrder(contentGroup, contentGroup3);
+    }
+
+
+    @Test
+    void shouldCheckContentNotParentAndChildrenOfEachOther() {
+        //given
+        var category = categoriesRepository.save(buildCategory().build());
+        var genre = genresRepository.save(buildGenre().build());
+        var parentContent = contentRepository.save(buildContent(category, genre).type(ContentType.SERIES).structureType(ContentStructureType.GROUP).build());
+        var content = contentRepository.save(buildContent(category, genre).build());
+        var content2 = contentRepository.save(buildContent(category, genre).build());
+        var content3 = contentRepository.save(buildContent(category, genre).build());
+        var contentGroup = contentGroupRepository.save(buildContentGroup(parentContent, content).disabledDate(LocalDateTime.now(clock)).build());
+        var contentGroup2 = contentGroupRepository.save(buildContentGroup(parentContent, content2).disabledDate(LocalDateTime.now(clock)).build());
+        var contentGroup3 = contentGroupRepository.save(buildContentGroup(parentContent, content3).disabledDate(LocalDateTime.now(clock)).build());
+
+        //when
+        var result = contentGroupRepository.checkContentNotParentAndChildrenOfEachOther(Set.of(content.getId().getId(), content3.getId().getId()));
+
+        //then
+        assertThat(result).isTrue();
+    }
+
+
+    @Test
+    void shouldCheckContentNotParentAndChildrenOfEachOtherAndFailIForHierarchyRelated() {
+        //given
+        var category = categoriesRepository.save(buildCategory().build());
+        var genre = genresRepository.save(buildGenre().build());
+        var parentContent = contentRepository.save(buildContent(category, genre).type(ContentType.SERIES).structureType(ContentStructureType.GROUP).build());
+        var content = contentRepository.save(buildContent(category, genre).build());
+        var content2 = contentRepository.save(buildContent(category, genre).build());
+        var content3 = contentRepository.save(buildContent(category, genre).build());
+        var contentGroup = contentGroupRepository.save(buildContentGroup(parentContent, content).disabledDate(LocalDateTime.now(clock)).build());
+        var contentGroup2 = contentGroupRepository.save(buildContentGroup(parentContent, content2).disabledDate(LocalDateTime.now(clock)).build());
+        var contentGroup3 = contentGroupRepository.save(buildContentGroup(parentContent, content3).disabledDate(LocalDateTime.now(clock)).build());
+
+        //when
+        var result = contentGroupRepository.checkContentNotParentAndChildrenOfEachOther(Set.of(content.getId().getId(),
+                                                                                               content3.getId().getId(),
+                                                                                               parentContent.getId().getId()));
+
+        //then
+        assertThat(result).isFalse();
     }
 }
