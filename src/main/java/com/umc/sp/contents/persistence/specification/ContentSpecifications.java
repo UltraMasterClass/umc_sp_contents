@@ -48,6 +48,7 @@ public class ContentSpecifications {
 
             // joins:
             var joinContent = cb.equal(contentTagsRoot.get("id").get("contentId"), root.get("id").get("id"));
+            //TODO: join global tags code on the like search
             var joinTags = cb.equal(contentTagsRoot.get("id").get("tagId"), tagsRoot.get("id").get("id"));
             var joinTranslation = cb.equal(tagTranslationRoot.get("tag").get("id"), tagsRoot.get("id"));
             var languageMatch = cb.equal(tagTranslationRoot.get("id").get("languageCode"), languageCode);

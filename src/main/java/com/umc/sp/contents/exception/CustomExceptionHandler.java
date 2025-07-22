@@ -15,6 +15,11 @@ public class CustomExceptionHandler {
         return new ResponseEntity<>(new ErrorResponse(ex.getMessage()), NOT_FOUND);
     }
 
+    @ExceptionHandler(ConflictException.class)
+    public final ResponseEntity<Object> handleConflictException(ConflictException ex) {
+        return new ResponseEntity<>(new ErrorResponse(ex.getMessage()), CONFLICT);
+    }
+
     @ExceptionHandler(Exception.class)
     public final ResponseEntity<Object> handleAllExceptions(Exception ex) {
         log.error("Internal error: ",ex);

@@ -34,7 +34,12 @@ public class ContentSearchServiceDB implements ContentSearchService {
     private final ContentMapper contentMapper;
 
     @Override
-    public ContentsDto searchContent(final Set<UUID> tagCodes, final Set<UUID> categoryIds, final String search, final String langCode, final int offset, final int limit) {
+    public ContentsDto searchContent(final Set<UUID> tagCodes,
+                                     final Set<UUID> categoryIds,
+                                     final String search,
+                                     final String langCode,
+                                     final int offset,
+                                     final int limit) {
         var pageable = PageRequest.of(offset / limit, limit, Sort.by("name").ascending());
         var contentSpecification = buildSearchQuery(tagCodes, categoryIds, search, langCode);
         var contents = contentRepository.findAll(contentSpecification, pageable);
@@ -52,12 +57,13 @@ public class ContentSearchServiceDB implements ContentSearchService {
                        .toList();
     }
 
-    private Map<UUID, UUID> getParentContentIdByContentId(final Set<UUID> contentIds) {
+    //TODO: put on a common place as it is used on ContentService as well
+    private Map<UUID, Set<UUID>> getParentContentIdByContentId(final Set<UUID> contentIds) {
         return contentGroupRepository.findAllByIdContentIdIn(contentIds)
                                      .stream()
-                                     .collect(Collectors.toMap(contentGroup -> contentGroup.getId().getContentId(),
-                                                               contentGroup -> contentGroup.getId().getParentContentId(),
-                                                               (o, o2) -> o2));
+                                     .collect(Collectors.groupingBy(contentGroup -> contentGroup.getId().getContentId(),
+                                                                    Collectors.mapping(contentGroup -> contentGroup.getId().getParentContentId(),
+                                                                                       Collectors.toSet())));
     }
 
     private Specification<Content> buildSearchQuery(final Set<UUID> tagCodes, final Set<UUID> categoryIds, final String search, final String langCode) {
@@ -69,7 +75,7 @@ public class ContentSearchServiceDB implements ContentSearchService {
             spec = spec.and(ContentSpecifications.hasCategories(categoryIds));
         }
         if (isNotBlank(search)) {
-            spec = spec.and(ContentSpecifications.searchOnTitleOrCategoryOrTagContains(search,langCode));
+            spec = spec.and(ContentSpecifications.searchOnTitleOrCategoryOrTagContains(search, langCode));
         }
         return spec;
     }

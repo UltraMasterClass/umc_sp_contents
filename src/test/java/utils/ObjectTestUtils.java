@@ -51,6 +51,6 @@ public class ObjectTestUtils {
     }
 
     public static Tag.TagBuilder buildTag(){
-        return Tag.builder().id(new TagId()).code(UUID.randomUUID().toString()).description(UUID.randomUUID().toString());
+        return Tag.builder().id(new TagId()).code(UUID.randomUUID().toString()).description(UUID.randomUUID().toString()).global(false);
     }
 }

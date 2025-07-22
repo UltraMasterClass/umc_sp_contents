@@ -54,7 +54,7 @@ public class Content {
     private String description;
 
     @ManyToOne
-    @JoinColumn(name = "genre_id", nullable = false)
+    @JoinColumn(name = "genre_id")
     private Genre genre;
 
     @Column(name = "speciality_id", nullable = false)

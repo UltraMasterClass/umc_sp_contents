@@ -14,14 +14,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ContentDto {
+public class ContentResourcesDto {
     private UUID id;
-    private Set<UUID> parentIds;
-    private boolean featured;
-    private ContentType type;
-    private ContentStructureType structureType;
-    private String name;
-    private String description;
-    private UUID specialityId;
-    private List<ContentInfoDto> attributes;
+    private List<ContentInfoDto> resources;
 }
