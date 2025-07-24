@@ -20,6 +20,11 @@ public class CustomExceptionHandler {
         return new ResponseEntity<>(new ErrorResponse(ex.getMessage()), CONFLICT);
     }
 
+    @ExceptionHandler(BadRequestException.class)
+    public final ResponseEntity<Object> handleBadRequestException(BadRequestException ex) {
+        return new ResponseEntity<>(new ErrorResponse(ex.getMessage()), BAD_REQUEST);
+    }
+
     @ExceptionHandler(Exception.class)
     public final ResponseEntity<Object> handleAllExceptions(Exception ex) {
         log.error("Internal error: ",ex);

@@ -2,7 +2,9 @@ package com.umc.sp.contents.service;
 
 import com.umc.sp.contents.exception.ConflictException;
 import com.umc.sp.contents.persistence.model.Category;
+import com.umc.sp.contents.persistence.model.Content;
 import com.umc.sp.contents.persistence.model.id.CategoryId;
+import com.umc.sp.contents.persistence.model.id.ContentId;
 import com.umc.sp.contents.persistence.repository.CategoriesRepository;
 import java.util.List;
 import java.util.Set;
@@ -35,6 +37,10 @@ public class CategoryService {
     @Transactional(readOnly = true)
     public List<Category> getCategoriesByIds(Set<UUID> categoryIds){
         return categoriesRepository.findAllById(categoryIds.stream().map(CategoryId::new).collect(Collectors.toSet()));
+    }
+
+    public void createDefaultTags(final Content content){
+
     }
 
 }

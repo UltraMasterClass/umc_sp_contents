@@ -28,8 +28,7 @@ public class ContentServiceManager {
             categoryService.checkCategoriesNotParentAndChildrenOfEachOther(createContentDto.getCategories());
             return categoryService.getCategoriesByIds(createContentDto.getCategories());
         }).map(categories -> {
-            //TODO: validate content types hierarchy, e.g episode should have parent and can't be parent, etc.
-            contentService.checkCategoriesNotParentAndChildrenOfEachOther(createContentDto.getParentContents());
+            contentService.checkContentNotParentAndChildrenOfEachOther(createContentDto.getParentContents());
             return contentService.createContent(createContentDto, categories);
         });
     }

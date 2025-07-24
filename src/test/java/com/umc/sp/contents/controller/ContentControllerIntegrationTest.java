@@ -10,6 +10,7 @@ import com.umc.sp.contents.dto.response.ContentsDto;
 import com.umc.sp.contents.exception.ErrorResponse;
 import com.umc.sp.contents.mapper.ContentMapper;
 import com.umc.sp.contents.persistence.model.ContentTag;
+import com.umc.sp.contents.persistence.model.Tag;
 import com.umc.sp.contents.persistence.model.TagTranslation;
 import com.umc.sp.contents.persistence.model.id.CategoryId;
 import com.umc.sp.contents.persistence.model.id.ContentId;
@@ -46,6 +47,7 @@ import static com.umc.sp.contents.persistence.model.type.ContentInfoType.THUMBNA
 import static com.umc.sp.contents.persistence.model.type.ContentStructureType.*;
 import static com.umc.sp.contents.persistence.model.type.ContentType.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static utils.ObjectTestUtils.buildCategory;
 import static utils.ObjectTestUtils.buildContent;
@@ -522,6 +524,15 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
                                                                                   .value(String.format("https://test/assets/videos/%s/images/large_cover.jpg",
                                                                                                        createdContent.getId()))
                                                                                   .build());
+        assertThat(tagsRepository.findAll()).usingRecursiveFieldByFieldElementComparatorIgnoringFields("id")
+                                            .containsExactlyInAnyOrder(tag,
+                                                                       Tag.builder()
+                                                                          .code(createdContent.getName())
+                                                                          .description(createdContent.getDescription())
+                                                                          .build());
+
+        assertThat(tagTranslationsRepository.findAll()).usingRecursiveFieldByFieldElementComparatorIgnoringFields("id", "tag")
+                                                       .containsExactlyInAnyOrder(TagTranslation.builder().value(createdContent.getName()).build());
     }
 
 
@@ -607,6 +618,164 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         assertThat(result).isEqualTo(new ErrorResponse("Given parent contents must not be parents of each other"));
         var contents = contentRepository.findAll();
         assertThat(contents).hasSize(2);
+    }
+
+
+    @Test
+    void shouldNotCreateContentIfGivenTypesAreNotCompatible() {
+        //given
+        var tag = tagsRepository.save(buildTag().build());
+        var parentCategory = categoriesRepository.save(buildCategory().build());
+        var category = categoriesRepository.save(buildCategory().parent(parentCategory).build());
+        var request = CreateContentDto.builder()
+                                      .name(UUID.randomUUID().toString())
+                                      .description(UUID.randomUUID().toString())
+                                      .type(VIDEO)
+                                      .structureType(GROUP)
+                                      .categories(Set.of(category.getId().getId()))
+                                      .attributes(Set.of(CreateContentInfoDto.builder()
+                                                                             .type(ContentInfoType.EXPERTS)
+                                                                             .value(UUID.randomUUID().toString())
+                                                                             .build()))
+                                      .tags(Set.of(tag.getId().getId()))
+                                      .build();
+
+        //when
+        var result = webTestClient.post()
+                                  .uri("/content")
+                                  .accept(MediaType.APPLICATION_JSON)
+                                  .contentType(MediaType.APPLICATION_JSON)
+                                  .bodyValue(request)
+                                  .exchange()
+                                  .expectStatus()
+                                  .isEqualTo(BAD_REQUEST)
+                                  .expectBody(ErrorResponse.class)
+                                  .returnResult()
+                                  .getResponseBody();
+
+        //then
+        assertThat(result).isEqualTo(new ErrorResponse("GROUP can not be of type VIDEO"));
+        var contents = contentRepository.findAll();
+        assertThat(contents).isEmpty();
+    }
+
+    @Test
+    void shouldNotCreateContentIfGivenParentIsNotGroupingType() {
+        //given
+        var tag = tagsRepository.save(buildTag().build());
+        var parentCategory = categoriesRepository.save(buildCategory().build());
+        var category = categoriesRepository.save(buildCategory().parent(parentCategory).build());
+        var content = contentRepository.save(buildContent(category, null).type(VIDEO).structureType(EPISODE).build());
+        var request = CreateContentDto.builder()
+                                      .name(UUID.randomUUID().toString())
+                                      .description(UUID.randomUUID().toString())
+                                      .type(VIDEO)
+                                      .structureType(EPISODE)
+                                      .categories(Set.of(category.getId().getId()))
+                                      .attributes(Set.of(CreateContentInfoDto.builder()
+                                                                             .type(ContentInfoType.EXPERTS)
+                                                                             .value(UUID.randomUUID().toString())
+                                                                             .build()))
+                                      .parentContents(Set.of(content.getId().getId()))
+                                      .tags(Set.of(tag.getId().getId()))
+                                      .build();
+
+        //when
+        var result = webTestClient.post()
+                                  .uri("/content")
+                                  .accept(MediaType.APPLICATION_JSON)
+                                  .contentType(MediaType.APPLICATION_JSON)
+                                  .bodyValue(request)
+                                  .exchange()
+                                  .expectStatus()
+                                  .isEqualTo(BAD_REQUEST)
+                                  .expectBody(ErrorResponse.class)
+                                  .returnResult()
+                                  .getResponseBody();
+
+        //then
+        assertThat(result).isEqualTo(new ErrorResponse("EPISODE should not be parent"));
+        var contents = contentRepository.findAll();
+        assertThat(contents).hasSize(1);
+    }
+
+
+    @Test
+    void shouldNotCreateContentIfParentNotGivenAndTypeIsNonParent() {
+        //given
+        var tag = tagsRepository.save(buildTag().build());
+        var parentCategory = categoriesRepository.save(buildCategory().build());
+        var category = categoriesRepository.save(buildCategory().parent(parentCategory).build());
+        var request = CreateContentDto.builder()
+                                      .name(UUID.randomUUID().toString())
+                                      .description(UUID.randomUUID().toString())
+                                      .type(VIDEO)
+                                      .structureType(EPISODE)
+                                      .categories(Set.of(category.getId().getId()))
+                                      .attributes(Set.of(CreateContentInfoDto.builder()
+                                                                             .type(ContentInfoType.EXPERTS)
+                                                                             .value(UUID.randomUUID().toString())
+                                                                             .build()))
+                                      .tags(Set.of(tag.getId().getId()))
+                                      .build();
+
+        //when
+        var result = webTestClient.post()
+                                  .uri("/content")
+                                  .accept(MediaType.APPLICATION_JSON)
+                                  .contentType(MediaType.APPLICATION_JSON)
+                                  .bodyValue(request)
+                                  .exchange()
+                                  .expectStatus()
+                                  .isEqualTo(BAD_REQUEST)
+                                  .expectBody(ErrorResponse.class)
+                                  .returnResult()
+                                  .getResponseBody();
+
+        //then
+        assertThat(result).isEqualTo(new ErrorResponse("EPISODE should have parent"));
+        var contents = contentRepository.findAll();
+        assertThat(contents).isEmpty();
+    }
+
+    @Test
+    void shouldNotCreateContentIfGivenTypeIsExpertAndAParentIsGiven() {
+        //given
+        var tag = tagsRepository.save(buildTag().build());
+        var parentCategory = categoriesRepository.save(buildCategory().build());
+        var category = categoriesRepository.save(buildCategory().parent(parentCategory).build());
+        var content = contentRepository.save(buildContent(category, null).type(EXPERT).structureType(GROUP).build());
+        var request = CreateContentDto.builder()
+                                      .name(UUID.randomUUID().toString())
+                                      .description(UUID.randomUUID().toString())
+                                      .type(EXPERT)
+                                      .structureType(GROUP)
+                                      .categories(Set.of(category.getId().getId()))
+                                      .attributes(Set.of(CreateContentInfoDto.builder()
+                                                                             .type(ContentInfoType.EXPERTS)
+                                                                             .value(UUID.randomUUID().toString())
+                                                                             .build()))
+                                      .parentContents(Set.of(content.getId().getId()))
+                                      .tags(Set.of(tag.getId().getId()))
+                                      .build();
+
+        //when
+        var result = webTestClient.post()
+                                  .uri("/content")
+                                  .accept(MediaType.APPLICATION_JSON)
+                                  .contentType(MediaType.APPLICATION_JSON)
+                                  .bodyValue(request)
+                                  .exchange()
+                                  .expectStatus()
+                                  .isEqualTo(BAD_REQUEST)
+                                  .expectBody(ErrorResponse.class)
+                                  .returnResult()
+                                  .getResponseBody();
+
+        //then
+        assertThat(result).isEqualTo(new ErrorResponse("EXPERTS should not have parent"));
+        var contents = contentRepository.findAll();
+        assertThat(contents).hasSize(1);
     }
 
 }

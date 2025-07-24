@@ -7,8 +7,10 @@ import com.umc.sp.contents.dto.response.ContentInfoDto;
 import com.umc.sp.contents.dto.response.TagDto;
 import com.umc.sp.contents.persistence.model.Category;
 import com.umc.sp.contents.persistence.model.Content;
+import com.umc.sp.contents.persistence.model.ContentGroup;
 import com.umc.sp.contents.persistence.model.ContentInfo;
 import com.umc.sp.contents.persistence.model.Tag;
+import com.umc.sp.contents.persistence.model.id.ContentGroupId;
 import com.umc.sp.contents.persistence.model.id.ContentId;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +20,6 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import static java.util.Objects.isNull;
-import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import static org.apache.commons.collections4.CollectionUtils.isEmpty;
 
 @Component
@@ -85,6 +86,11 @@ public class ContentMapper {
                                            .attributes(getAttributes(content.getContentInfos()))
                                            .build());
     }
+
+    public ContentGroup buildContentGroup(final UUID parentId, final ContentId contentId, final int sortOrder) {
+        return ContentGroup.builder().id(new ContentGroupId(parentId, contentId.getId())).sortOrder(sortOrder).build();
+    }
+
 
     private List<TagDto> getTags(final List<Tag> contentTags) {
         if (isEmpty(contentTags)) {
