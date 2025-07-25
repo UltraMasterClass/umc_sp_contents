@@ -5,6 +5,7 @@ import com.umc.sp.contents.dto.request.CreateContentInfoDto;
 import com.umc.sp.contents.dto.response.ContentDetailDto;
 import com.umc.sp.contents.dto.response.ContentResourcesDto;
 import com.umc.sp.contents.dto.response.ContentsDto;
+import com.umc.sp.contents.exception.BadRequestException;
 import com.umc.sp.contents.exception.ConflictException;
 import com.umc.sp.contents.exception.NotFoundException;
 import com.umc.sp.contents.mapper.ContentInfoMapper;
@@ -33,6 +34,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import static com.umc.sp.contents.persistence.model.type.ContentInfoType.*;
+import static com.umc.sp.contents.persistence.model.type.ContentStructureType.EPISODE;
+import static com.umc.sp.contents.persistence.model.type.ContentStructureType.NON_PARENT_TYPES;
+import static com.umc.sp.contents.persistence.model.type.ContentType.EXPERT;
+import static com.umc.sp.contents.persistence.model.type.ContentType.GROUP_TYPES;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
 @Slf4j
@@ -51,6 +56,8 @@ public class ContentService {
     private final TagsRepository tagsRepository;
     private final ContentMapper contentMapper;
     private final ContentInfoMapper contentInfoMapper;
+    private final TagService tagService;
+
 
     @Value("${content.resource.videos.url:}")
     private String contentResourceVideosUrl;
@@ -67,24 +74,23 @@ public class ContentService {
 
     @Transactional
     public ContentResourcesDto createContent(final CreateContentDto createContentDto, final List<Category> categories) {
+        validateContentToCreate(createContentDto);
         var contentId = new ContentId();
         if (CollectionUtils.isEmpty(createContentDto.getAttributes())) {
             createContentDto.setAttributes(new HashSet<>());
         }
 
-        final Content content = contentMapper.buildContent(contentId, createContentDto, categories);
+        var content = contentMapper.buildContent(contentId, createContentDto, categories);
         var generatedDefaultAttributes = generateDefaultAttributes(content, createContentDto);
-
         var contentInfos = getContentInfos(createContentDto, content);
         contentInfos.addAll(generatedDefaultAttributes);
         content.setContentInfos(contentInfos);
         contentRepository.save(content);
 
-        //TODO: associate content with given parents
+        associateParentContent(createContentDto, contentId);
+        tagService.createContentDefaultTags(content);
 
         var resources = generatedDefaultAttributes.stream().map(contentInfoMapper::convertToDto).filter(Optional::isPresent).map(Optional::get).toList();
-
-        //TODO: create (es) tag with content name
         return ContentResourcesDto.builder().id(contentId.getId()).resources(resources).build();
     }
 
@@ -114,7 +120,7 @@ public class ContentService {
     }
 
     @Transactional(readOnly = true)
-    public void checkCategoriesNotParentAndChildrenOfEachOther(Set<UUID> contentIds) {
+    public void checkContentNotParentAndChildrenOfEachOther(Set<UUID> contentIds) {
         if (CollectionUtils.isEmpty(contentIds)) {
             return;
         }
@@ -122,6 +128,17 @@ public class ContentService {
         if (!contentGroupRepository.checkContentNotParentAndChildrenOfEachOther(contentIds)) {
             throw new ConflictException("Given parent contents must not be parents of each other");
         }
+    }
+
+    private void associateParentContent(final CreateContentDto createContentDto, final ContentId contentId) {
+        if (CollectionUtils.isEmpty(createContentDto.getParentContents())) {
+            return;
+        }
+        var collect = createContentDto.getParentContents()
+                                      .stream()
+                                      .map(parentId -> contentMapper.buildContentGroup(parentId, contentId, createContentDto.getSortOrder()))
+                                      .collect(Collectors.toSet());
+        contentGroupRepository.saveAll(collect);
     }
 
 
@@ -201,5 +218,40 @@ public class ContentService {
 
     private CreateContentInfoDto buildCreateContentInfoDto(final ContentInfoType infoType, final String url) {
         return CreateContentInfoDto.builder().type(infoType).value(url).build();
+    }
+
+
+    private void validateContentToCreate(final CreateContentDto createContentDto) {
+        var isNonParent = NON_PARENT_TYPES.contains(createContentDto.getStructureType());
+        var isGroupType = GROUP_TYPES.contains(createContentDto.getType());
+        if ((isNonParent && isGroupType) || (!isNonParent && !isGroupType)) {
+            throw new BadRequestException(createContentDto.getStructureType() + " can not be of type " + createContentDto.getType());
+        }
+
+        var isParentContentsEmpty = CollectionUtils.isEmpty(createContentDto.getParentContents());
+        if (EPISODE.equals(createContentDto.getStructureType()) && isParentContentsEmpty) {
+            throw new BadRequestException("EPISODE should have parent");
+        }
+
+        if (EXPERT.equals(createContentDto.getType()) && !isParentContentsEmpty) {
+            throw new BadRequestException("EXPERTS should not have parent");
+        }
+
+        if (isParentContentsEmpty) {
+            return;
+        }
+
+        var parentContentIds = createContentDto.getParentContents().stream().map(ContentId::new).collect(Collectors.toSet());
+        var parents = contentRepository.findAllById(parentContentIds);
+        parents.stream().forEach(content -> {
+            if (NON_PARENT_TYPES.contains(content.getStructureType())) {
+                throw new BadRequestException(content.getStructureType() + " should not be parent");
+            }
+
+            if (!GROUP_TYPES.contains(content.getType())) {
+                throw new BadRequestException(content.getType() + " should not be parent");
+            }
+        });
+
     }
 }

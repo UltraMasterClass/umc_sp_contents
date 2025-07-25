@@ -25,6 +25,7 @@ public class CreateContentDto {
     @NotNull
     private ContentStructureType structureType;
     private boolean featured;
+    private int sortOrder;
     @NotEmpty
     private Set<UUID> categories;
     private Set<UUID> parentContents;
