@@ -13,7 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -40,7 +40,7 @@ public class ContentSectionController {
         return contentSectionManager.getContentSections(sectionViewType, offset, getLimit(limit), langCode).map(dto -> ResponseEntity.ok().body(dto));
     }
 
-    @PutMapping(value = "/explore", produces = "application/json")
+    @PostMapping(value = "/explore", produces = "application/json")
     public Mono<ResponseEntity<ContentsDto>> searchContent(@RequestBody @Valid ExplorerDto explorerDto) {
         //TODO: support language on header or explorer? :O
         return contentSectionManager.searchByExplorer(explorerDto, "es").map(dto -> ResponseEntity.ok().body(dto));

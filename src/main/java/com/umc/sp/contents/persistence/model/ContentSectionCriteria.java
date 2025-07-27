@@ -38,7 +38,7 @@ public class ContentSectionCriteria {
     @Enumerated(EnumType.STRING)
     private ContentSectionCriteriaType type;
 
-    @Column(name = "relationType", nullable = false)
+    @Column(name = "relation_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private ContentSectionCriteriaRelationType relationType;
 

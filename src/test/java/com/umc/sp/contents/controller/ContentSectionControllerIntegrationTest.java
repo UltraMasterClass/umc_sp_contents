@@ -533,7 +533,7 @@ public class ContentSectionControllerIntegrationTest implements IntegrationTest 
         var request = ExplorerDto.builder().tags(Set.of(tagId.getId())).categories(Set.of(categoryId.getId())).offset(0).limit(10).build();
 
         //when
-        var result = webTestClient.put()
+        var result = webTestClient.post()
                                   .uri("/sections/explore")
                                   .accept(MediaType.APPLICATION_JSON)
                                   .contentType(MediaType.APPLICATION_JSON)
@@ -553,18 +553,18 @@ public class ContentSectionControllerIntegrationTest implements IntegrationTest 
 
     @Test
     void shouldNotSearchContentFByExplorerIfInvalidLimitIsProvided() {
-       //given
+        //given
         var request = ExplorerDto.builder().offset(0).limit(0).build();
 
         //when
-        webTestClient.put()
-                                  .uri("/sections/explore")
-                                  .accept(MediaType.APPLICATION_JSON)
-                                  .contentType(MediaType.APPLICATION_JSON)
-                                  .bodyValue(request)
-                                  .exchange()
-                                  .expectStatus()
-                                  .isBadRequest();
+        webTestClient.post()
+                     .uri("/sections/explore")
+                     .accept(MediaType.APPLICATION_JSON)
+                     .contentType(MediaType.APPLICATION_JSON)
+                     .bodyValue(request)
+                     .exchange()
+                     .expectStatus()
+                     .isBadRequest();
     }
 
 }
