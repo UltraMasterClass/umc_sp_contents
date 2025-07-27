@@ -48,6 +48,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.38'
     implementation 'org.apache.commons:commons-lang3:3.17.0'
     implementation 'org.apache.commons:commons-collections4:4.5.0'
+    implementation 'com.github.ben-manes.caffeine:caffeine'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

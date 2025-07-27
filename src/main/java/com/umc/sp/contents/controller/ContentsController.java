@@ -32,6 +32,7 @@ public class ContentsController {
 
     @GetMapping(value = "/search", produces = "application/json")
     public Mono<ResponseEntity<ContentsDto>> searchContent(@RequestParam(required = false) String text,
+                                                           //TODO: support as header or param? :O
                                                            @RequestParam(required = false, defaultValue = "es") String langCode,
                                                            @RequestParam(required = false) Set<UUID> tags,
                                                            @RequestParam(required = false) Set<UUID> categories,

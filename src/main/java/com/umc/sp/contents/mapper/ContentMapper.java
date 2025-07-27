@@ -43,7 +43,6 @@ public class ContentMapper {
                              .description(createContentDto.getName())
                              //TODO: add once it is confirmed that will have it
                              //.genre(genre)
-                             .specialityId(UUID.randomUUID())
                              .build();
     }
 
@@ -59,7 +58,6 @@ public class ContentMapper {
                                      .structureType(content.getStructureType())
                                      .name(content.getName())
                                      .description(content.getDescription())
-                                     .specialityId(content.getSpecialityId())
                                      .attributes(getAttributes(content.getContentInfos()))
                                      .build());
     }
@@ -81,7 +79,6 @@ public class ContentMapper {
                                            .name(content.getName())
                                            .description(content.getDescription())
                                            .genre(genreDto.orElse(null))
-                                           .specialityId(content.getSpecialityId())
                                            .tags(getTags(contentTags))
                                            .attributes(getAttributes(content.getContentInfos()))
                                            .build());
