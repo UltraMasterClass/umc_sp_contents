@@ -30,7 +30,7 @@ public class ContentSectionController {
     private final ContentSectionManager contentSectionManager;
 
     @GetMapping(value = "/{viewType}/main", produces = "application/json")
-    public Mono<ResponseEntity<ContentSectionsDto>> searchContent(@PathVariable String viewType,
+    public Mono<ResponseEntity<ContentSectionsDto>> getContentSections(@PathVariable String viewType,
                                                                   //TODO: support as header or param? :O
                                                                   @RequestParam(required = false, defaultValue = "es") String langCode,
                                                                   @RequestParam(required = false, defaultValue = "0") int offset,
@@ -41,7 +41,7 @@ public class ContentSectionController {
     }
 
     @PostMapping(value = "/explore", produces = "application/json")
-    public Mono<ResponseEntity<ContentsDto>> searchContent(@RequestBody @Valid ExplorerDto explorerDto) {
+    public Mono<ResponseEntity<ContentsDto>> searchByExplorer(@RequestBody @Valid ExplorerDto explorerDto) {
         //TODO: support language on header or explorer? :O
         return contentSectionManager.searchByExplorer(explorerDto, "es").map(dto -> ResponseEntity.ok().body(dto));
     }
