@@ -13,6 +13,7 @@ import com.umc.sp.contents.persistence.repository.TagsRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,14 +27,16 @@ public class TagService {
     private final ContentTagRepository contentTagRepository;
     private final TagMapper tagMapper;
 
+    @Value("${content.language.default:es}")
+    private String contentLanguageDefault;
+
     @Transactional
-    public void createContentDefaultTags(@NonNull final Content content){
+    public void createContentDefaultTags(@NonNull final Content content) {
         final Tag tag = tagsRepository.save(tagMapper.fromContent(content));
-        var tagTranslation = TagTranslation.builder().id(new TagTranslationId(tag.getId(), "es")).value(tag.getCode()).tag(tag).build();
+        var tagTranslation = TagTranslation.builder().id(new TagTranslationId(tag.getId(), contentLanguageDefault)).value(tag.getCode()).tag(tag).build();
         tagTranslationsRepository.save(tagTranslation);
         contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content.getId().getId(), tag.getId().getId())).build());
     }
-
 
 
 }

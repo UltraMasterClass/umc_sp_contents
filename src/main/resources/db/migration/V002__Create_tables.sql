@@ -69,7 +69,6 @@ CREATE TRIGGER update_timestamp BEFORE UPDATE ON tag_translations FOR EACH ROW E
 CREATE TABLE contents (
     id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
     genre_id UUID REFERENCES genres(id),
-    speciality_id UUID NOT NULL,
     type VARCHAR(45),
     structure_type VARCHAR(45),
     name TEXT,
@@ -85,7 +84,6 @@ CREATE TRIGGER update_timestamp BEFORE UPDATE ON contents FOR EACH ROW EXECUTE P
 CREATE INDEX idx_contents_type  ON contents(type);
 CREATE INDEX idx_contents_featured  ON contents(featured);
 CREATE INDEX idx_contents_genre_id  ON contents(genre_id);
-CREATE INDEX idx_contents_speciality_id  ON contents(speciality_id);
 
 -- content_info
 CREATE TABLE content_info (
@@ -162,17 +160,38 @@ CREATE TRIGGER update_timestamp BEFORE UPDATE ON content_categories FOR EACH ROW
 -- content_sections table
 CREATE TABLE content_sections (
     id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
-    type VARCHAR(100) NOT NULL,
+    view_type VARCHAR(100) NOT NULL,
+    content_type VARCHAR(100) NOT NULL,
     title TEXT,
     title_code VARCHAR(50) NOT NULL,
+    sort_order INTEGER NOT NULL,
     number_of_elements INTEGER NOT NULL,
     sort_type VARCHAR(50) NOT NULL,
+    disabled_date TIMESTAMP,
     create_date TIMESTAMP NOT NULL,
     update_date TIMESTAMP NOT NULL
 );
 
 CREATE TRIGGER insert_timestamp BEFORE INSERT ON content_sections FOR EACH ROW EXECUTE PROCEDURE insert_timestamps();
 CREATE TRIGGER update_timestamp BEFORE UPDATE ON content_sections FOR EACH ROW EXECUTE PROCEDURE update_timestamps();
+
+CREATE INDEX idx_content_sections_view_type ON content_sections(view_type);
+CREATE INDEX idx_content_sections_content_type ON content_sections(content_type);
+
+-- content_section_criteria table
+CREATE TABLE content_section_criteria (
+    id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
+    content_section_id UUID NOT NULL REFERENCES content_sections(id),
+    type VARCHAR(100) NOT NULL,
+    relation_type VARCHAR(50) NOT NULL,
+    reference_ids TEXT NOT NULL,
+    disabled_date TIMESTAMP,
+    create_date TIMESTAMP NOT NULL,
+    update_date TIMESTAMP NOT NULL
+);
+
+CREATE TRIGGER insert_timestamp BEFORE INSERT ON content_section_criteria FOR EACH ROW EXECUTE PROCEDURE insert_timestamps();
+CREATE TRIGGER update_timestamp BEFORE UPDATE ON content_section_criteria FOR EACH ROW EXECUTE PROCEDURE update_timestamps();
 
 -- subscription_plan table
 CREATE TABLE subscription_plan (

@@ -22,6 +22,5 @@ public class ContentDto {
     private ContentStructureType structureType;
     private String name;
     private String description;
-    private UUID specialityId;
     private List<ContentInfoDto> attributes;
 }
