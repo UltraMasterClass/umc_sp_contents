@@ -61,7 +61,7 @@ public class Content {
     @JoinColumn(name = "genre_id")
     private Genre genre;
 
-    @OneToMany(mappedBy = "content", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "content", cascade = CascadeType.ALL, orphanRemoval = true, fetch = jakarta.persistence.FetchType.EAGER)
     private List<ContentInfo> contentInfos;
 
     @ManyToMany
