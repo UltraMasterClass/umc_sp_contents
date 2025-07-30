@@ -1,0 +1,156 @@
+{
+  "info": {
+    "_postman_id": "umc-contents-collection",
+    "name": "UMC Contents API",
+    "description": "Colección de endpoints para el microservicio UMC Contents",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Content",
+      "item": [
+        {
+          "name": "Search Content",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/content/search?text=test&langCode={{lang}}&limit={{limit}}&offset={{offset}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "content",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "text",
+                  "value": "test"
+                },
+                {
+                  "key": "langCode",
+                  "value": "{{lang}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "{{limit}}"
+                },
+                {
+                  "key": "offset",
+                  "value": "{{offset}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Content By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/content/your-content-id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "content",
+                "your-content-id"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Content",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "{{contentType}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nuevo Curso de Postman\",\n  \"description\": \"Curso intensivo sobre Postman.\",\n  \"type\": \"COURSE\",\n  \"structureType\": \"SINGLE\",\n  \"featured\": false,\n  \"sortOrder\": 10,\n  \"categories\": [\"uuid-categoria-tecnologia\"],\n  \"tags\": [\"uuid-tag-api\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/content",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "content"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Sections",
+      "item": [
+        {
+          "name": "Get Main Sections",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sections/MOBILE/main",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sections",
+                "MOBILE",
+                "main"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Explore Sections",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "{{contentType}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sections\": [\n    {\n      \"id\": \"uuid-seccion-1\",\n      \"limit\": 5\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sections/explore",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sections",
+                "explore"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
