@@ -1,11 +1,14 @@
 package com.umc.sp.contents.service;
 
+import com.umc.sp.contents.dto.response.ContentDto;
 import com.umc.sp.contents.dto.response.ContentSectionDto;
+import com.umc.sp.contents.dto.response.ContentSeriesDto;
 import com.umc.sp.contents.mapper.ContentMapper;
 import com.umc.sp.contents.mapper.ContentSectionMapper;
 import com.umc.sp.contents.persistence.model.Content;
 import com.umc.sp.contents.persistence.model.ContentSection;
 import com.umc.sp.contents.persistence.model.ContentSectionCriteria;
+import com.umc.sp.contents.persistence.model.custom.ContentCountByParentId;
 import com.umc.sp.contents.persistence.model.type.ContentSectionCriteriaRelationType;
 import com.umc.sp.contents.persistence.model.type.ContentSectionCriteriaType;
 import com.umc.sp.contents.persistence.model.type.ContentSectionViewType;
@@ -23,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -41,6 +45,7 @@ import static com.umc.sp.contents.persistence.model.type.ContentSectionCriteriaT
 import static com.umc.sp.contents.persistence.model.type.ContentSectionCriteriaType.TAG;
 import static com.umc.sp.contents.persistence.model.type.ContentSectionType.EXPERTS;
 import static com.umc.sp.contents.persistence.model.type.ContentSectionType.HERO_CONTENT;
+import static com.umc.sp.contents.persistence.model.type.ContentType.SERIES;
 import static com.umc.sp.contents.persistence.specification.ContentSpecifications.hasExpertType;
 import static com.umc.sp.contents.persistence.specification.ContentSpecifications.isFeatured;
 import static java.util.Objects.isNull;
@@ -91,6 +96,7 @@ public class ContentSectionService {
 
         // 6. Map to DTOs
         var contentDtos = page.stream().map(c -> contentMapper.convertToDto(c, parentMap.get(c.getId().getId()))).flatMap(Optional::stream).toList();
+        contentDtos = (HERO_CONTENT.equals(contentSection.getContentType())) ? extendResults(contentDtos) : contentDtos;
 
         // 7. Extract criteria sets
         var tags = getCriteriaSet(criteriaMap, TAG, AND);
@@ -108,6 +114,21 @@ public class ContentSectionService {
                                                            excludeCategories,
                                                            contentOffset,
                                                            contentSection.getNumberOfElements());
+    }
+
+    private List<ContentDto> extendResults(final List<ContentDto> contentDtos) {
+        var seriesIds = contentDtos.stream().filter(content -> SERIES.equals(content.getType())).map(ContentDto::getId).collect(Collectors.toSet());
+        var childCountByParentId = contentGroupRepository.getChildContentCountByParentContentIds(seriesIds)
+                                                         .stream()
+                                                         .collect(Collectors.toMap(ContentCountByParentId::getParentContentId,
+                                                                                   ContentCountByParentId::getChildContentCount,
+                                                                                   (s, s2) -> s2));
+        return contentDtos.stream().peek(contentDto -> {
+            if (contentDto instanceof ContentSeriesDto seriesDto) {
+                int episodeCount = childCountByParentId.getOrDefault(seriesDto.getId(), 0);
+                seriesDto.setEpisodes(episodeCount);
+            }
+        }).toList();
     }
 
     private Specification<Content> getContentSpecification(final ContentSection contentSection,

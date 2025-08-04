@@ -1,7 +1,9 @@
 package com.umc.sp.contents.persistence.repository;
 
 import com.umc.sp.contents.persistence.model.ContentGroup;
+import com.umc.sp.contents.persistence.model.custom.ContentCountByParentId;
 import com.umc.sp.contents.persistence.model.id.ContentGroupId;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -14,7 +16,11 @@ public interface ContentGroupRepository extends JpaRepository<ContentGroup, Cont
 
     List<ContentGroup> findByIdContentId(UUID contentId);
 
-    List<ContentGroup> findAllByIdContentIdIn(Set<UUID> contentId);
+    List<ContentGroup> findAllByIdContentIdIn(Set<UUID> contentIds);
+
+    @Query(name = "getChildContentCountByParentContentIds", nativeQuery = true)
+    List<ContentCountByParentId> getChildContentCountByParentContentIds(@Param("contentIds") Set<UUID> contentIds);
+
 
     @Query(value = """
             SELECT NOT EXISTS (

@@ -4,6 +4,7 @@ import com.umc.sp.contents.dto.request.CreateContentDto;
 import com.umc.sp.contents.dto.request.CreateContentInfoDto;
 import com.umc.sp.contents.dto.response.ContentDetailDto;
 import com.umc.sp.contents.dto.response.ContentResourcesDto;
+import com.umc.sp.contents.dto.response.ContentSeriesDetailDto;
 import com.umc.sp.contents.dto.response.ContentsDto;
 import com.umc.sp.contents.exception.BadRequestException;
 import com.umc.sp.contents.exception.ConflictException;
@@ -13,6 +14,7 @@ import com.umc.sp.contents.mapper.ContentMapper;
 import com.umc.sp.contents.persistence.model.Category;
 import com.umc.sp.contents.persistence.model.Content;
 import com.umc.sp.contents.persistence.model.ContentInfo;
+import com.umc.sp.contents.persistence.model.custom.ContentCountByParentId;
 import com.umc.sp.contents.persistence.model.id.ContentId;
 import com.umc.sp.contents.persistence.model.type.ContentInfoType;
 import com.umc.sp.contents.persistence.repository.ContentGroupRepository;
@@ -99,7 +101,7 @@ public class ContentService {
         return contentRepository.findById(id).flatMap(content -> {
             var contentTags = tagsRepository.findContentTagsByContentId(content.getId().getId());
             var parentIds = getParentIds(id);
-            return contentMapper.convertToDetailDto(content, parentIds, contentTags);
+            return contentMapper.convertToDetailDto(content, parentIds, contentTags).map(this::extendContentDetailDto);
         }).orElseThrow(() -> new NotFoundException(id));
     }
 
@@ -128,6 +130,19 @@ public class ContentService {
         if (!contentGroupRepository.checkContentNotParentAndChildrenOfEachOther(contentIds)) {
             throw new ConflictException("Given parent contents must not be parents of each other");
         }
+    }
+
+    private ContentDetailDto extendContentDetailDto(final ContentDetailDto detailDto) {
+        if (detailDto instanceof ContentSeriesDetailDto seriesDetailDto) {
+            var childCount = contentGroupRepository.getChildContentCountByParentContentIds(Set.of(detailDto.getId()))
+                                                   .stream()
+                                                   .map(ContentCountByParentId::getChildContentCount)
+                                                   .findFirst()
+                                                   .orElse(0);
+            seriesDetailDto.setEpisodes(childCount);
+            return seriesDetailDto;
+        }
+        return detailDto;
     }
 
     private void associateParentContent(final CreateContentDto createContentDto, final ContentId contentId) {

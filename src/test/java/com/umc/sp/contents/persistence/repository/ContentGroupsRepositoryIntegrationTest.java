@@ -1,10 +1,12 @@
 package com.umc.sp.contents.persistence.repository;
 
 import com.umc.sp.contents.IntegrationTest;
+import com.umc.sp.contents.persistence.model.custom.ContentCountByParentId;
 import com.umc.sp.contents.persistence.model.type.ContentStructureType;
 import com.umc.sp.contents.persistence.model.type.ContentType;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -121,6 +123,27 @@ public class ContentGroupsRepositoryIntegrationTest implements IntegrationTest {
 
         //then
         assertThat(result).isTrue();
+    }
+
+
+    @Test
+    void shouldGetChildContentCountByParentContentIds() {
+        //given
+        var category = categoriesRepository.save(buildCategory().build());
+        var genre = genresRepository.save(buildGenre().build());
+        var parentContent = contentRepository.save(buildContent(category, genre).type(ContentType.SERIES).structureType(ContentStructureType.GROUP).build());
+        var content = contentRepository.save(buildContent(category, genre).build());
+        var content2 = contentRepository.save(buildContent(category, genre).build());
+        var content3 = contentRepository.save(buildContent(category, genre).build());
+        var contentGroup = contentGroupRepository.save(buildContentGroup(parentContent, content).disabledDate(LocalDateTime.now(clock)).build());
+        var contentGroup2 = contentGroupRepository.save(buildContentGroup(parentContent, content2).build());
+        var contentGroup3 = contentGroupRepository.save(buildContentGroup(parentContent, content3).build());
+
+        //when
+        var result = contentGroupRepository.getChildContentCountByParentContentIds(Set.of(parentContent.getId().getId()));
+
+        //then
+        assertThat(result).containsExactlyInAnyOrder(new ContentCountByParentId(2,parentContent.getId().getId()));
     }
 
 

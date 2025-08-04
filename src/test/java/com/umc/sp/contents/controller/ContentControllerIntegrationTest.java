@@ -1,11 +1,14 @@
 package com.umc.sp.contents.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.umc.sp.contents.IntegrationTest;
 import com.umc.sp.contents.dto.request.CreateContentDto;
 import com.umc.sp.contents.dto.request.CreateContentInfoDto;
 import com.umc.sp.contents.dto.response.ContentDetailDto;
 import com.umc.sp.contents.dto.response.ContentInfoDto;
 import com.umc.sp.contents.dto.response.ContentResourcesDto;
+import com.umc.sp.contents.dto.response.ContentSeriesDetailDto;
 import com.umc.sp.contents.dto.response.ContentsDto;
 import com.umc.sp.contents.exception.ErrorResponse;
 import com.umc.sp.contents.mapper.ContentMapper;
@@ -89,6 +92,9 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
     private ContentMapper contentMapper;
 
     @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
     private Clock clock;
 
     @BeforeEach
@@ -144,6 +150,42 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         assertThat(result).isEqualTo(contentMapper.convertToDetailDto(content,
                                                                       Set.of(parentContent.getId().getId(), parentContent2.getId().getId()),
                                                                       List.of(tag)).get());
+    }
+
+    @Test
+    void shouldGetContentSeriesDetailById() {
+        //given
+        var tag = tagsRepository.save(buildTag().build());
+        var category = categoriesRepository.save(buildCategory().build());
+        var category2 = categoriesRepository.save(buildCategory().build());
+        var genre = genresRepository.save(buildGenre().build());
+        var parentContent = contentRepository.save(buildContent(category, genre).type(SERIES).structureType(GROUP).build());
+        var contentInfo = buildContentInfo().build();
+        var content = buildContent(category, genre).structureType(EPISODE)
+                                                   .contentInfos(List.of(contentInfo))
+                                                   .categories(List.of(category, category2))
+                                                   .build();
+        contentInfo.setContent(content);
+        content = contentRepository.save(content);
+        var contentGroup = contentGroupRepository.save(buildContentGroup(parentContent, content).build());
+        var contentTag = contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content.getId().getId(), tag.getId().getId())).build());
+
+        var expectedResult = (ContentSeriesDetailDto) contentMapper.convertToDetailDto(parentContent, Set.of(), List.of(tag)).get();
+        expectedResult.setEpisodes(1);
+
+        //when
+        var result = webTestClient.get()
+                                  .uri("/content/{contentId}", parentContent.getId())
+                                  .accept(MediaType.APPLICATION_JSON)
+                                  .exchange()
+                                  .expectStatus()
+                                  .isOk()
+                                  .expectBody(ContentSeriesDetailDto.class)
+                                  .returnResult()
+                                  .getResponseBody();
+
+        //then
+        assertThat(result).isEqualTo(expectedResult);
     }
 
     @Test
@@ -264,6 +306,17 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content5.getId().getId(), tag2.getId().getId())).build());
         contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content4.getId().getId(), tagWithDifferentText.getId().getId())).build());
 
+        var expectedResponse = objectMapper.valueToTree(ContentsDto.builder()
+                                                                   .contents(List.of(contentMapper.convertToDto(parentContent, null).get(),
+                                                                                     contentMapper.convertToDto(content, Set.of(parentContent.getId().getId()))
+                                                                                                  .get(),
+                                                                                     contentMapper.convertToDto(content2, Set.of(parentContent.getId().getId()))
+                                                                                                  .get(),
+                                                                                     contentMapper.convertToDto(content5, Set.of(parentContent.getId().getId()))
+                                                                                                  .get()))
+                                                                   .hasNext(true)
+                                                                   .build());
+
         //when
         var result = webTestClient.get()
                                   .uri(uriBuilder -> uriBuilder.path("/content/search")
@@ -275,17 +328,13 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
                                   .exchange()
                                   .expectStatus()
                                   .isOk()
-                                  .expectBody(ContentsDto.class)
+                                  .expectBody(JsonNode.class)
                                   .returnResult()
                                   .getResponseBody();
 
         //then
         assertThat(result).isNotNull();
-        assertThat(result.isHasNext()).isTrue();
-        assertThat(result.getContents()).containsExactlyInAnyOrder(contentMapper.convertToDto(parentContent, null).get(),
-                                                                   contentMapper.convertToDto(content, Set.of(parentContent.getId().getId())).get(),
-                                                                   contentMapper.convertToDto(content2, Set.of(parentContent.getId().getId())).get(),
-                                                                   contentMapper.convertToDto(content5, Set.of(parentContent.getId().getId())).get());
+        assertThat(result).isEqualTo(expectedResponse);
     }
 
 

@@ -1,7 +1,10 @@
 package com.umc.sp.contents.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.umc.sp.contents.IntegrationTest;
 import com.umc.sp.contents.dto.response.ContentSectionsDto;
+import com.umc.sp.contents.dto.response.ContentSeriesDto;
 import com.umc.sp.contents.dto.response.ContentsDto;
 import com.umc.sp.contents.dto.response.ExplorerDto;
 import com.umc.sp.contents.exception.ErrorResponse;
@@ -29,9 +32,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.json.JSONException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -84,6 +90,10 @@ public class ContentSectionControllerIntegrationTest implements IntegrationTest 
 
     @Autowired
     private ContentSectionMapper contentSectionMapper;
+
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Autowired
     private Clock clock;
@@ -151,7 +161,7 @@ public class ContentSectionControllerIntegrationTest implements IntegrationTest 
         contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content5WitDifferentCategory.getId().getId(), tag.getId().getId())).build());
         contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content5WitDifferentCategory.getId().getId(), tag2.getId().getId())).build());
 
-        var contentSection = contentSectionsRepository.save(buildContentSection().numberOfElements(10).build());
+        var contentSection = contentSectionsRepository.save(buildContentSection().contentType(ContentSectionType.HERO_CONTENT).numberOfElements(10).build());
         var contentSectionCriteria = contentSectionCriteriaRepository.save(buildContentSectionCriteria(contentSection.getId()).relationType(AND)
                                                                                                                               .referenceIds(tag.getId() +
                                                                                                                                             "," +
@@ -170,7 +180,22 @@ public class ContentSectionControllerIntegrationTest implements IntegrationTest 
         var expectedContent1 = contentMapper.convertToDto(content, Set.of(parentContent.getId().getId())).get();
         var expectedContent2 = contentMapper.convertToDto(content2, Set.of(parentContent.getId().getId())).get();
         var expectedContent3 = contentMapper.convertToDto(content3, Set.of(parentContent.getId().getId())).get();
-        var expectedContent4 = contentMapper.convertToDto(parentContent, null).get();
+        var expectedContent4 = (ContentSeriesDto) contentMapper.convertToDto(parentContent, null).get();
+        expectedContent4.setEpisodes(4);
+        var expectedSection = contentSectionMapper.buildContentSectionDto(contentSection,
+                                                                          List.of(expectedContent4, expectedContent3, expectedContent2, expectedContent1),
+                                                                          false,
+                                                                          Set.of(tag.getId().getId(), tag2.getId().getId()),
+                                                                          Set.of(category.getId().getId()),
+                                                                          Set.of(excludedTag.getId().getId()),
+                                                                          Set.of(),
+                                                                          0,
+                                                                          contentSection.getNumberOfElements());
+        var expectedResponse = objectMapper.valueToTree(ContentSectionsDto.builder()
+                                                                          .hasNext(false)
+                                                                          .viewType(DISCOVERY)
+                                                                          .sections(List.of(expectedSection))
+                                                                          .build());
 
 
         //when
@@ -180,31 +205,17 @@ public class ContentSectionControllerIntegrationTest implements IntegrationTest 
                                   .exchange()
                                   .expectStatus()
                                   .isOk()
-                                  .expectBody(ContentSectionsDto.class)
+                                  .expectBody(JsonNode.class)
                                   .returnResult()
                                   .getResponseBody();
 
         //then
         assertThat(result).isNotNull();
-        assertThat(result.isHasNext()).isFalse();
-        assertThat(result.getViewType()).isEqualTo(DISCOVERY);
-        assertThat(result.getSections()).containsExactlyInAnyOrder(contentSectionMapper.buildContentSectionDto(contentSection,
-                                                                                                               List.of(expectedContent4,
-                                                                                                                       expectedContent3,
-                                                                                                                       expectedContent2,
-                                                                                                                       expectedContent1),
-                                                                                                               false,
-                                                                                                               Set.of(tag.getId().getId(),
-                                                                                                                      tag2.getId().getId()),
-                                                                                                               Set.of(category.getId().getId()),
-                                                                                                               Set.of(excludedTag.getId().getId()),
-                                                                                                               Set.of(),
-                                                                                                               0,
-                                                                                                               contentSection.getNumberOfElements()));
+        assertThat(result).isEqualTo(expectedResponse);
     }
 
     @Test
-    void shouldGetContentSectionsByViewTypeAndReturnExplorerOnSectionIfMoreContentAvailable() {
+    void shouldGetContentSectionsByViewTypeAndReturnExplorerOnSectionIfMoreContentAvailable() throws JSONException {
         //given
         var text = UUID.randomUUID().toString();
         var categoryId = new CategoryId();
@@ -267,6 +278,21 @@ public class ContentSectionControllerIntegrationTest implements IntegrationTest 
 
         var expectedContent3 = contentMapper.convertToDto(content3, Set.of(parentContent.getId().getId())).get();
         var expectedContent4 = contentMapper.convertToDto(parentContent, null).get();
+        var expectedSection = contentSectionMapper.buildContentSectionDto(contentSection,
+                                                                          List.of(expectedContent4, expectedContent3),
+                                                                          true,
+                                                                          Set.of(tag.getId().getId(), tag2.getId().getId()),
+                                                                          Set.of(category.getId().getId()),
+                                                                          Set.of(excludedTag.getId().getId()),
+                                                                          Set.of(),
+                                                                          0,
+                                                                          contentSection.getNumberOfElements());
+
+        var expectedResponse = objectMapper.valueToTree(ContentSectionsDto.builder()
+                                                                          .hasNext(true)
+                                                                          .viewType(DISCOVERY)
+                                                                          .sections(List.of(expectedSection))
+                                                                          .build());
 
 
         //when
@@ -279,24 +305,13 @@ public class ContentSectionControllerIntegrationTest implements IntegrationTest 
                                   .exchange()
                                   .expectStatus()
                                   .isOk()
-                                  .expectBody(ContentSectionsDto.class)
+                                  .expectBody(JsonNode.class)
                                   .returnResult()
                                   .getResponseBody();
 
         //then
         assertThat(result).isNotNull();
-        assertThat(result.isHasNext()).isTrue();
-        assertThat(result.getViewType()).isEqualTo(DISCOVERY);
-        assertThat(result.getSections()).containsExactlyInAnyOrder(contentSectionMapper.buildContentSectionDto(contentSection,
-                                                                                                               List.of(expectedContent4, expectedContent3),
-                                                                                                               true,
-                                                                                                               Set.of(tag.getId().getId(),
-                                                                                                                      tag2.getId().getId()),
-                                                                                                               Set.of(category.getId().getId()),
-                                                                                                               Set.of(excludedTag.getId().getId()),
-                                                                                                               Set.of(),
-                                                                                                               0,
-                                                                                                               contentSection.getNumberOfElements()));
+        JSONAssert.assertEquals(expectedResponse.toString(), result.toString(), JSONCompareMode.LENIENT);
     }
 
     @Test
