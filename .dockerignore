@@ -1,0 +1,55 @@
+# Git
+.git
+.gitignore
+
+# Build directories
+target/
+build/
+.gradle/
+gradle-wrapper.jar
+!build/libs/*.jar
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Testing
+.coverage/
+coverage/
+
+# Node modules (if any)
+node_modules/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Documentation
+README.md
+docs/
+
+# Docker files
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Environment files (except .env.ecr which might be needed)
+.env
+.env.local
+.env.staging
+.env.production
+
+# Scripts
+*.sh
+!docker-build-ecr-fixed.sh
