@@ -8,6 +8,7 @@ public enum ContentInfoType {
     DESCRIPTION,
     TITLE,
     OV_LAN,
+    EXPERT_COUNTRY_CODE,
     EXPERTS,
     NO_EPISODES,
     RELEASE_YEAR,
