@@ -134,11 +134,12 @@ public class ContentService {
 
     private ContentDetailDto extendContentDetailDto(final ContentDetailDto detailDto) {
         if (detailDto instanceof ContentSeriesDetailDto seriesDetailDto) {
+            // Get episode count, defaulting to 0 if no episodes exist
             var childCount = contentGroupRepository.getChildContentCountByParentContentIds(Set.of(detailDto.getId()))
                                                    .stream()
                                                    .map(ContentCountByParentId::getChildContentCount)
                                                    .findFirst()
-                                                   .orElse(0);
+                                                   .orElse(0); // 0 is valid - series can have no episodes
             seriesDetailDto.setEpisodes(childCount);
             return seriesDetailDto;
         }
