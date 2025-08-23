@@ -73,7 +73,7 @@ public class ContentSectionService {
         return contentSectionsRepository.findByViewTypeAndDisabledDateIsNull(viewType, pageable);
     }
 
-    @Cacheable(value = CONTENT_SECTION_DTO_CACHE, key = "#contentSection.id.id")
+    //@Cacheable(value = CONTENT_SECTION_DTO_CACHE, key = "#contentSection.id.id")
     @Transactional(readOnly = true)
     public ContentSectionDto getContentSectionDto(final ContentSection contentSection) {
         // 1. Retrieve active criteria
