@@ -203,6 +203,9 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
 
         tagTranslationsRepository.saveAll(List.of(tagTranslation, tagTranslation2, tagTranslationDifferent));
 
+        // NOTA: La búsqueda por category.code está desactivada en ContentSpecifications
+        // Las siguientes líneas crean categorías con código que contiene el texto de búsqueda,
+        // pero NO serán encontradas por la búsqueda actual
         var category = categoriesRepository.save(buildCategory().code(UUID.randomUUID() + text).build());
         var category2 = categoriesRepository.save(buildCategory().code(text + UUID.randomUUID()).build());
         var categoryDifferentText = categoriesRepository.save(buildCategory().build());
@@ -213,6 +216,7 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
         var content = buildContent(category, genre).contentInfos(List.of(contentInfo)).build();
         contentInfo.setContent(content);
         content = contentRepository.save(content);
+        // content2 y content3 NO serán encontrados porque la búsqueda por category.code está desactivada
         var content2 = contentRepository.save(buildContent(category, genre).build());
         var content3 = contentRepository.save(buildContent(category2, genre).build());
         // excluded tag, category and title do not contain the text to search
@@ -237,8 +241,10 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
         var contents = contentRepository.findAll(searchOnTitleOrCategoryOrTagContains(text, "es"), Pageable.unpaged());
 
         //then
+        // ACTUALIZADO: Solo esperamos content (por tag), content5 (por tag) y parentContent (por título)
+        // content2 y content3 NO se encuentran porque la búsqueda por category.code está desactivada
         assertThat(contents.getContent()).usingRecursiveFieldByFieldElementComparatorIgnoringFields(".contentInfos")
-                                         .containsExactlyInAnyOrder(content, content2, content3, content5, parentContent);
+                                         .containsExactlyInAnyOrder(content, content5, parentContent);
     }
 }
 
