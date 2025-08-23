@@ -275,6 +275,8 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         tagTranslationsRepository.saveAll(List.of(tagTranslation, tagTranslation2, tagTranslationDifferent));
 
 
+        // NOTA: La búsqueda por category.code está desactivada en ContentSpecifications
+        // Las siguientes categorías tienen código con el texto pero NO serán encontradas
         var category = categoriesRepository.save(buildCategory().code(UUID.randomUUID() + text).build());
         var category2 = categoriesRepository.save(buildCategory().code(text + UUID.randomUUID()).build());
         var categoryDifferentText = categoriesRepository.save(buildCategory().code(UUID.randomUUID().toString()).build());
@@ -285,8 +287,9 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         var content = buildContent(category, genre).name("bbbbbbbb").contentInfos(List.of(contentInfo)).build();
         contentInfo.setContent(content);
         content = contentRepository.save(content);
+        // content2 y content3 NO serán encontrados porque la búsqueda por category.code está desactivada
         var content2 = contentRepository.save(buildContent(category, genre).name("ccccccccc").build());
-        // excluded from results as is out of page
+        // excluded from results - NO será encontrado
         var content3 = contentRepository.save(buildContent(category2, genre).name("zzzzzzzz").build());
         // excluded tag, category and title do not contain the text to search
         var content4 = contentRepository.save(buildContent(categoryDifferentText, genre).name("111aaaaaaaa").build());
@@ -306,15 +309,15 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content5.getId().getId(), tag2.getId().getId())).build());
         contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content4.getId().getId(), tagWithDifferentText.getId().getId())).build());
 
+        // ACTUALIZADO: Solo esperamos content (por tag), content5 (por tag) y parentContent (por título)
+        // content2 y content3 NO se encuentran porque la búsqueda por category.code está desactivada
         var expectedResponse = objectMapper.valueToTree(ContentsDto.builder()
                                                                    .contents(List.of(contentMapper.convertToDto(parentContent, null).get(),
                                                                                      contentMapper.convertToDto(content, Set.of(parentContent.getId().getId()))
                                                                                                   .get(),
-                                                                                     contentMapper.convertToDto(content2, Set.of(parentContent.getId().getId()))
-                                                                                                  .get(),
                                                                                      contentMapper.convertToDto(content5, Set.of(parentContent.getId().getId()))
                                                                                                   .get()))
-                                                                   .hasNext(true)
+                                                                   .hasNext(false)
                                                                    .build());
 
         //when
@@ -322,7 +325,7 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
                                   .uri(uriBuilder -> uriBuilder.path("/content/search")
                                                                .queryParam("text", text)
                                                                .queryParam("offset", 0)
-                                                               .queryParam("limit", 4)
+                                                               .queryParam("limit", 3)
                                                                .build())
                                   .accept(MediaType.APPLICATION_JSON)
                                   .exchange()
