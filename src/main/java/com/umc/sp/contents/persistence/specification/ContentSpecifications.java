@@ -73,7 +73,7 @@ public class ContentSpecifications {
             subquery.select(subRoot)
                     .where(
                             cb.equal(subRoot.get("id"), root.get("id")),
-                            join.get("id").in(categoryIds)
+                            join.get("id").get("id").in(categoryIds)
                     );
 
             return cb.not(cb.exists(subquery));
@@ -83,11 +83,13 @@ public class ContentSpecifications {
     public static Specification<Content> searchOnTitleOrCategoryOrTagContains(String search, String languageCode) {
         return (root, query, cb) -> {
             var pattern = "%" + search.toLowerCase() + "%";
-            var nameLike = cb.like(cb.lower(root.get("name")), pattern);
 
-            // Predicate for categories.name
-            Join<Content, Category> categoriesJoin = root.join("categories", JoinType.LEFT);
-            var categoryLike = cb.like(cb.lower(categoriesJoin.get("code")), pattern);
+            // Predicate for content.name
+            //var nameLike = cb.like(cb.lower(root.get("name")), pattern);
+
+            // Predicate for categories.code - DESACTIVADO
+           /* Join<Content, Category> categoriesJoin = root.join("categories", JoinType.INNER);
+            var categoryLike = cb.like(cb.lower(categoriesJoin.get("code")), pattern);*/
 
             // Predicates for tag_translation.value
             Root<ContentTag> contentTagsRoot = query.from(ContentTag.class);
@@ -104,7 +106,10 @@ public class ContentSpecifications {
             var tagTranslationPredicate = cb.and(joinContent, joinTags, joinTranslation, languageMatch, valueLike);
 
             query.distinct(true);
-            return cb.or(nameLike, categoryLike, tagTranslationPredicate);
+            // Búsqueda por nombre del contenido O por valor de traducción del tag
+            // NOTA: La búsqueda por category.code está desactivada
+            //return cb.or(nameLike, tagTranslationPredicate);
+            return cb.or(tagTranslationPredicate);
         };
     }
 }

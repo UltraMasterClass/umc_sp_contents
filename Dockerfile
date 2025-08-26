@@ -27,8 +27,9 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 # Expose port (Contents microservice uses 8082)
 EXPOSE 8082
 
-# JVM optimization for containers
+# JVM optimization for containers and Spring profile
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:+UseStringDeduplication"
+ENV SPRING_PROFILES_ACTIVE=devops
 
-# Run the application
-CMD ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+# Run the application with explicit profile
+CMD ["sh", "-c", "java $JAVA_OPTS -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} -jar app.jar"]
