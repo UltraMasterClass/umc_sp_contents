@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # Temporary PostgreSQL database for testing
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: umc-contents-postgres-test
+    environment:
+      POSTGRES_DB: stagingdb_contents
+      POSTGRES_USER: umcAdmin
+      POSTGRES_PASSWORD: TempPassword123$
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umcAdmin -d stagingdb_contents"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - umc-test-network
+
+  # UMC SP Contents API from ECR
+  umc-sp-contents:
+    image: 682794874214.dkr.ecr.mx-central-1.amazonaws.com/umc-sp-contents:latest
+    container_name: umc-contents-api-test
+    ports:
+      - "8082:8082"
+    environment:
+      # Spring Profile
+      SPRING_PROFILES_ACTIVE: devops
+      
+      # Database Configuration
+      DATABASE_URL: jdbc:postgresql://postgres-test:5432/stagingdb_contents
+      DATABASE_USERNAME: umcAdmin
+      DATABASE_PASSWORD: TempPassword123$
+      
+      # Server Configuration
+      SERVER_PORT: 8082
+      
+      # Disable AWS services for local testing
+      USE_AWS_SECRETS: false
+      USE_AWS_PARAMETERS: false
+      USE_AWS_DEFAULT_CREDENTIALS: false
+      
+      # JPA Configuration
+      JPA_SHOW_SQL: true
+      JPA_FORMAT_SQL: true
+      SPRING_FLYWAY_ENABLED: true
+      SPRING_FLYWAY_CREATE_SCHEMAS: true
+      
+      # Logging
+      LOGGING_LEVEL_COM_UMC_SP_CONTENTS: DEBUG
+      LOGGING_LEVEL_AWS: WARN
+      LOGGING_LEVEL_AWS_SDK: WARN
+      
+      # Content URLs (mock for testing)
+      CONTENT_RESOURCE_VIDEOS_URL: https://test-bucket.s3.amazonaws.com/content/videos/%s/
+      CONTENT_ASSETS_VIDEOS_URL: https://test-bucket.s3.amazonaws.com/assets/videos/%s/images/
+      CONTENT_ASSETS_SERIES_URL: https://test-bucket.s3.amazonaws.com/assets/series/%s/images/
+      CONTENT_ASSETS_EXPERTS_URL: https://test-bucket.s3.amazonaws.com/assets/experts/%s/images/
+      
+      # Swagger Configuration
+      SPRINGDOC_SWAGGER_UI_ENABLED: true
+      SPRINGDOC_API_DOCS_PATH: /v3/api-docs
+      SPRINGDOC_SWAGGER_UI_PATH: /swagger-ui.html
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - umc-test-network
+
+volumes:
+  postgres_test_data:
+
+networks:
+  umc-test-network:
+    driver: bridge
