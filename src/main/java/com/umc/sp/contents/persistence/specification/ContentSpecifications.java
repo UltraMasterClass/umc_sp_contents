@@ -85,7 +85,7 @@ public class ContentSpecifications {
             var pattern = "%" + search.toLowerCase() + "%";
 
             // Predicate for content.name
-            var nameLike = cb.like(cb.lower(root.get("name")), pattern);
+            //var nameLike = cb.like(cb.lower(root.get("name")), pattern);
 
             // Predicate for categories.code - DESACTIVADO
            /* Join<Content, Category> categoriesJoin = root.join("categories", JoinType.INNER);
@@ -108,7 +108,8 @@ public class ContentSpecifications {
             query.distinct(true);
             // Búsqueda por nombre del contenido O por valor de traducción del tag
             // NOTA: La búsqueda por category.code está desactivada
-            return cb.or(nameLike, tagTranslationPredicate);
+            //return cb.or(nameLike, tagTranslationPredicate);
+            return cb.or(tagTranslationPredicate);
         };
     }
 }
