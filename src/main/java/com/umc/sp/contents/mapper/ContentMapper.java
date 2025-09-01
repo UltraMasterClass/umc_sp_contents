@@ -55,9 +55,10 @@ public class ContentMapper {
             return Optional.empty();
         }
 
+        var categoryDtos = content.getCategories().stream().map(categoryMapper::convertToDto).filter(Optional::isPresent).map(Optional::get).toList();
         return switch (content.getType()) {
-            case SERIES -> Optional.of(convertToContentSeriesDto(content, parentIds));
-            default -> Optional.of(getContentDto(content, parentIds));
+            case SERIES -> Optional.of(convertToContentSeriesDto(content, parentIds, categoryDtos));
+            default -> Optional.of(getContentDto(content, parentIds, categoryDtos));
         };
     }
 
@@ -93,8 +94,8 @@ public class ContentMapper {
         return attributes.stream().map(contentInfoMapper::convertToDto).filter(Optional::isPresent).map(Optional::get).toList();
     }
 
-    private ContentDto getContentDto(final Content content, final Set<UUID> parentIds) {
-        return toContentDto(new ContentDto(), content, parentIds);
+    private ContentDto getContentDto(final Content content, final Set<UUID> parentIds, final List<CategoryDto> categoryDtos) {
+        return toContentDto(new ContentDto(), content, parentIds, categoryDtos);
     }
 
     private ContentSeriesDetailDto convertToSeriesDetailDto(final Content content,
@@ -114,8 +115,8 @@ public class ContentMapper {
         return toContentDetailDto(new ContentDetailDto(), content, parentIds, categoryDtos, contentTags, genreDto);
     }
 
-    private ContentSeriesDto convertToContentSeriesDto(final Content content, final Set<UUID> parentIds) {
-        return toContentDto(new ContentSeriesDto(), content, parentIds);
+    private ContentSeriesDto convertToContentSeriesDto(final Content content, final Set<UUID> parentIds, final List<CategoryDto> categoryDtos) {
+        return toContentDto(new ContentSeriesDto(), content, parentIds, categoryDtos);
     }
 
     private <T extends ContentDetailDto> T toContentDetailDto(T base,
@@ -138,7 +139,7 @@ public class ContentMapper {
         return base;
     }
 
-    private <T extends ContentDto> T toContentDto(T base, final Content content, final Set<UUID> parentIds) {
+    private <T extends ContentDto> T toContentDto(T base, final Content content, final Set<UUID> parentIds, final List<CategoryDto> categoryDtos) {
         base.setId(content.getId().getId());
         base.setParentIds(parentIds);
         base.setFeatured(content.isFeatured());
@@ -147,6 +148,7 @@ public class ContentMapper {
         base.setName(content.getName());
         base.setDescription(content.getDescription());
         base.setAttributes(getAttributes(content.getContentInfos()));
+        base.setCategories(categoryDtos);
         return base;
     }
 }

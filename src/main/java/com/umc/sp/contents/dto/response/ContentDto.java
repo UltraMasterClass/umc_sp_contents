@@ -23,4 +23,5 @@ public class ContentDto {
     private String name;
     private String description;
     private List<ContentInfoDto> attributes;
+    private List<CategoryDto> categories;
 }
