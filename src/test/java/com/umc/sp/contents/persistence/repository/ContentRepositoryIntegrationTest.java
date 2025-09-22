@@ -203,7 +203,7 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
 
         tagTranslationsRepository.saveAll(List.of(tagTranslation, tagTranslation2, tagTranslationDifferent));
 
-        // NOTA: La búsqueda por category.code está desactivada en ContentSpecifications
+        // NOTA: La búsqueda por category.code Y content.name está desactivada en ContentSpecifications por performance
         // Las siguientes líneas crean categorías con código que contiene el texto de búsqueda,
         // pero NO serán encontradas por la búsqueda actual
         var category = categoriesRepository.save(buildCategory().code(UUID.randomUUID() + text).build());
@@ -223,6 +223,7 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
         var content4 = contentRepository.save(buildContent(categoryDifferentText, genre).build());
         var content5 = contentRepository.save(buildContent(categoryDifferentText, genre).build());
 
+        // parentContent NO será encontrado porque la búsqueda por content.name está desactivada
         var parentContent = contentRepository.save(buildContent(categoryDifferentText, genre).name(UUID.randomUUID() + text + UUID.randomUUID())
                                                                                              .type(ContentType.SERIES)
                                                                                              .structureType(ContentStructureType.GROUP)
@@ -241,10 +242,11 @@ public class ContentRepositoryIntegrationTest implements IntegrationTest {
         var contents = contentRepository.findAll(searchOnTitleOrCategoryOrTagContains(text, "es"), Pageable.unpaged());
 
         //then
-        // ACTUALIZADO: Solo esperamos content (por tag), content5 (por tag) y parentContent (por título)
+        // ACTUALIZADO: Solo esperamos content (por tag) y content5 (por tag)
+        // parentContent NO se encuentra porque la búsqueda por content.name está desactivada
         // content2 y content3 NO se encuentran porque la búsqueda por category.code está desactivada
         assertThat(contents.getContent()).usingRecursiveFieldByFieldElementComparatorIgnoringFields(".contentInfos")
-                                         .containsExactlyInAnyOrder(content, content5, parentContent);
+                                         .containsExactlyInAnyOrder(content, content5);
     }
 }
 
