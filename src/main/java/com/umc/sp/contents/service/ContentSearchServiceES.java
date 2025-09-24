@@ -12,6 +12,18 @@ public class ContentSearchServiceES implements ContentSearchService{
 
     @Override
     public ContentsDto searchContent(final Set<UUID> tagCodes, final Set<UUID> categoryIds, final String search, final String langCode, final int offset, final int limit) {
+        return searchContent(tagCodes, categoryIds, null, null, search, langCode, offset, limit);
+    }
+    
+    @Override
+    public ContentsDto searchContent(final Set<UUID> tagCodes, 
+                                    final Set<UUID> categoryIds,
+                                    final Set<UUID> excludeTags,
+                                    final Set<UUID> excludeCategories,
+                                    final String search, 
+                                    final String langCode, 
+                                    final int offset, 
+                                    final int limit) {
         //TODO: implement when elastic search is integrated
         throw new RuntimeException("Elastic Search queries not supported");
     }

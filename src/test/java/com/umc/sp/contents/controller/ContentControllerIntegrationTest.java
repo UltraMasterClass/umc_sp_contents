@@ -275,7 +275,7 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         tagTranslationsRepository.saveAll(List.of(tagTranslation, tagTranslation2, tagTranslationDifferent));
 
 
-        // NOTA: La búsqueda por category.code está desactivada en ContentSpecifications
+        // NOTA: La búsqueda por category.code Y content.name está desactivada en ContentSpecifications por performance
         // Las siguientes categorías tienen código con el texto pero NO serán encontradas
         var category = categoriesRepository.save(buildCategory().code(UUID.randomUUID() + text).build());
         var category2 = categoriesRepository.save(buildCategory().code(text + UUID.randomUUID()).build());
@@ -295,6 +295,7 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         var content4 = contentRepository.save(buildContent(categoryDifferentText, genre).name("111aaaaaaaa").build());
         var content5 = contentRepository.save(buildContent(categoryDifferentText, genre).name("dddddddd").build());
 
+        // parentContent NO será encontrado porque la búsqueda por content.name está desactivada
         var parentContent = contentRepository.save(buildContent(categoryDifferentText, genre).name("aaaaaaaaa" + text + UUID.randomUUID())
                                                                                              .type(ContentType.SERIES)
                                                                                              .structureType(ContentStructureType.GROUP)
@@ -309,11 +310,11 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content5.getId().getId(), tag2.getId().getId())).build());
         contentTagRepository.save(ContentTag.builder().id(new ContentTagId(content4.getId().getId(), tagWithDifferentText.getId().getId())).build());
 
-        // ACTUALIZADO: Solo esperamos content (por tag), content5 (por tag) y parentContent (por título)
+        // ACTUALIZADO: Solo esperamos content (por tag) y content5 (por tag)
+        // parentContent NO se encuentra porque la búsqueda por content.name está desactivada
         // content2 y content3 NO se encuentran porque la búsqueda por category.code está desactivada
         var expectedResponse = objectMapper.valueToTree(ContentsDto.builder()
-                                                                   .contents(List.of(contentMapper.convertToDto(parentContent, null).get(),
-                                                                                     contentMapper.convertToDto(content, Set.of(parentContent.getId().getId()))
+                                                                   .contents(List.of(contentMapper.convertToDto(content, Set.of(parentContent.getId().getId()))
                                                                                                   .get(),
                                                                                      contentMapper.convertToDto(content5, Set.of(parentContent.getId().getId()))
                                                                                                   .get()))
@@ -352,7 +353,8 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         var tag2 = tagsRepository.save(buildTag().build());
         var tagWithDifferentTextAndTag = tagsRepository.save(buildTag().build());
 
-        var tagTranslation = TagTranslation.builder().id(new TagTranslationId(tag.getId(), "es")).tag(tag).build();
+        // IMPORTANTE: tagTranslation debe contener el texto para que content2 sea encontrado
+        var tagTranslation = TagTranslation.builder().id(new TagTranslationId(tag.getId(), "es")).value(text + UUID.randomUUID()).tag(tag).build();
         var tagTranslation2 = TagTranslation.builder().id(new TagTranslationId(tag2.getId(), "es")).value(UUID.randomUUID() + text).tag(tag2).build();
         var tagTranslationDifferent = TagTranslation.builder()
                                                     .id(new TagTranslationId(tagWithDifferentTextAndTag.getId(), "es"))
@@ -368,12 +370,14 @@ public class ContentControllerIntegrationTest implements IntegrationTest {
         var genre = genresRepository.save(buildGenre().build());
 
         var content = contentRepository.save(buildContent(category, genre).build());
-        var content2 = contentRepository.save(buildContent(category, genre).name(UUID.randomUUID() + text + UUID.randomUUID()).build());
+        // content2 NO tiene el texto en el nombre porque la búsqueda por name está desactivada
+        var content2 = contentRepository.save(buildContent(category, genre).name(UUID.randomUUID().toString()).build());
         var content3 = contentRepository.save(buildContent(category2, genre).build());
         var content4 = contentRepository.save(buildContent(categoryDifferentTextAndCode, genre).build());
         var content5 = contentRepository.save(buildContent(categoryDifferentTextAndCode, genre).build());
 
-        var parentContent = contentRepository.save(buildContent(categoryDifferentTextAndCode, genre).name(UUID.randomUUID() + text + UUID.randomUUID())
+        // parentContent tampoco tiene el texto en el nombre porque la búsqueda por name está desactivada
+        var parentContent = contentRepository.save(buildContent(categoryDifferentTextAndCode, genre).name(UUID.randomUUID().toString())
                                                                                                     .type(ContentType.SERIES)
                                                                                                     .structureType(ContentStructureType.GROUP)
                                                                                                     .build());

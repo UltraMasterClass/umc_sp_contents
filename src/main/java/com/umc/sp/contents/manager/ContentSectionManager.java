@@ -26,10 +26,11 @@ public class ContentSectionManager {
     }
 
     public Mono<ContentsDto> searchByExplorer(final ExplorerDto explorerDto, final String langCode) {
-        // TODO: support excluded tags and categories on the search content
         return Mono.just(contentSearchService.searchContent(explorerDto.getTags(),
                                                             explorerDto.getCategories(),
-                                                            null,
+                                                            explorerDto.getExcludeTags(),
+                                                            explorerDto.getExcludeCategories(),
+                                                            null, // text search
                                                             langCode,
                                                             explorerDto.getOffset(),
                                                             explorerDto.getLimit()));

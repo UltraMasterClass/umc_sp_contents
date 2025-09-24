@@ -40,8 +40,20 @@ public class ContentSearchServiceDB implements ContentSearchService {
                                      final String langCode,
                                      final int offset,
                                      final int limit) {
+        return searchContent(tagCodes, categoryIds, null, null, search, langCode, offset, limit);
+    }
+    
+    @Override
+    public ContentsDto searchContent(final Set<UUID> tagCodes,
+                                     final Set<UUID> categoryIds,
+                                     final Set<UUID> excludeTags,
+                                     final Set<UUID> excludeCategories,
+                                     final String search,
+                                     final String langCode,
+                                     final int offset,
+                                     final int limit) {
         var pageable = PageRequest.of(offset / limit, limit, Sort.by("name").ascending());
-        var contentSpecification = buildSearchQuery(tagCodes, categoryIds, search, langCode);
+        var contentSpecification = buildSearchQuery(tagCodes, categoryIds, excludeTags, excludeCategories, search, langCode);
         var contents = contentRepository.findAll(contentSpecification, pageable);
         return ContentsDto.builder().contents(getContentDtos(contents)).hasNext(contents.hasNext()).build();
     }
@@ -67,12 +79,27 @@ public class ContentSearchServiceDB implements ContentSearchService {
     }
 
     private Specification<Content> buildSearchQuery(final Set<UUID> tagCodes, final Set<UUID> categoryIds, final String search, final String langCode) {
+        return buildSearchQuery(tagCodes, categoryIds, null, null, search, langCode);
+    }
+    
+    private Specification<Content> buildSearchQuery(final Set<UUID> tagCodes, 
+                                                    final Set<UUID> categoryIds,
+                                                    final Set<UUID> excludeTags,
+                                                    final Set<UUID> excludeCategories,
+                                                    final String search, 
+                                                    final String langCode) {
         Specification<Content> spec = (root, query, cb) -> cb.conjunction();
         if (isNotEmpty(tagCodes)) {
             spec = spec.and(ContentSpecifications.hasTags(tagCodes));
         }
         if (isNotEmpty(categoryIds)) {
             spec = spec.and(ContentSpecifications.hasCategories(categoryIds));
+        }
+        if (isNotEmpty(excludeTags)) {
+            spec = spec.and(ContentSpecifications.hasTagsNotIn(excludeTags));
+        }
+        if (isNotEmpty(excludeCategories)) {
+            spec = spec.and(ContentSpecifications.hasCategoriesNotIn(excludeCategories));
         }
         if (isNotBlank(search)) {
             spec = spec.and(ContentSpecifications.searchOnTitleOrCategoryOrTagContains(search, langCode));

@@ -84,7 +84,7 @@ public class ContentSpecifications {
         return (root, query, cb) -> {
             var pattern = "%" + search.toLowerCase() + "%";
 
-            // Predicate for content.name
+            // Predicate for content.name - DESACTIVADO POR PERFORMANCE
             //var nameLike = cb.like(cb.lower(root.get("name")), pattern);
 
             // Predicate for categories.code - DESACTIVADO
@@ -106,8 +106,8 @@ public class ContentSpecifications {
             var tagTranslationPredicate = cb.and(joinContent, joinTags, joinTranslation, languageMatch, valueLike);
 
             query.distinct(true);
-            // Búsqueda por nombre del contenido O por valor de traducción del tag
-            // NOTA: La búsqueda por category.code está desactivada
+            // Búsqueda solo por valor de traducción del tag
+            // NOTA: La búsqueda por content.name y category.code está desactivada por performance
             //return cb.or(nameLike, tagTranslationPredicate);
             return cb.or(tagTranslationPredicate);
         };
