@@ -143,6 +143,13 @@ nbactions.xml
 nb-configuration.xml
 
 ##############################
+## Environment Variables
+##############################
+.env
+.env.local
+.env.*.local
+
+##############################
 ## Log file
 ##############################
 *.log

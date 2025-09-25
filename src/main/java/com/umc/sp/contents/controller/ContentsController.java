@@ -1,41 +1,66 @@
 package com.umc.sp.contents.controller;
 
-import java.time.Clock;
+import com.umc.sp.contents.dto.request.CreateContentDto;
+import com.umc.sp.contents.dto.response.ContentDetailDto;
+import com.umc.sp.contents.dto.response.ContentResourcesDto;
+import com.umc.sp.contents.dto.response.ContentsDto;
+import com.umc.sp.contents.manager.ContentServiceManager;
+import com.umc.sp.contents.persistence.model.id.ContentId;
+import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Validated
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/content")
 @RequiredArgsConstructor
 public class ContentsController {
 
-    private final Clock clock;
+    private final ContentServiceManager contentServiceManager;
 
-    @RequestMapping(value = "/video", method = RequestMethod.GET,produces = "application/json")
-    public ResponseEntity<Map<String, Object>> findUmcVideo() {
-        log.info("Starting Content Administration....");
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("timeStamp", LocalDateTime.now(clock).format(DateTimeFormatter.ISO_DATE_TIME));
-        response.put("status", "OK");
-        response.put("content_id", "b8ef44b4-b49b-48d8-8d21-493cb1adb9ba");
-        response.put("message", "Video  operations  successfully");
-
-        log.info("Finishing Content Administration....");
-        return new ResponseEntity<>(response, HttpStatus.OK);
+    @GetMapping(value = "/search", produces = "application/json")
+    public Mono<ResponseEntity<ContentsDto>> searchContent(@RequestParam(required = false) String text,
+                                                           //TODO: support as header or param? :O
+                                                           @RequestParam(required = false, defaultValue = "es") String langCode,
+                                                           @RequestParam(required = false) Set<UUID> tags,
+                                                           @RequestParam(required = false) Set<UUID> categories,
+                                                           @RequestParam(required = false, defaultValue = "0") int offset,
+                                                           @RequestParam(required = false, defaultValue = "20") int limit) {
+        return contentServiceManager.searchContent(tags, categories, text, langCode, offset, getLimit(limit))
+                                    .map(contentsDto -> ResponseEntity.ok().body(contentsDto));
     }
 
+    @GetMapping(value = "/{contentId}", produces = "application/json")
+    public Mono<ResponseEntity<ContentDetailDto>> getContentById(@PathVariable String contentId) {
+        return contentServiceManager.getContentById(new ContentId(contentId)).map(contentDetailDto -> ResponseEntity.ok().body(contentDetailDto));
+    }
 
+    @GetMapping(value = "/{contentId}/children", produces = "application/json")
+    public Mono<ResponseEntity<ContentsDto>> getContentByParentId(@PathVariable String contentId,
+                                                                  @RequestParam(required = false, defaultValue = "0") int offset,
+                                                                  @RequestParam(required = false, defaultValue = "20") int limit) {
+        return contentServiceManager.getContentByParentId(new ContentId(contentId), offset, getLimit(limit))
+                                    .map(contentDetailDto -> ResponseEntity.ok().body(contentDetailDto));
+    }
+
+    @PostMapping(produces = "application/json")
+    public Mono<ResponseEntity<ContentResourcesDto>> createContent(@RequestBody CreateContentDto createContentDto) {
+        return contentServiceManager.createContent(createContentDto).map(contentResourcesDto -> ResponseEntity.ok().body(contentResourcesDto));
+    }
+
+    private int getLimit(final int limit) {
+        return (limit > 0) ? limit : 20;
+    }
 }
