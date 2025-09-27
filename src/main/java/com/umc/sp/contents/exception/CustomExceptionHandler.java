@@ -14,6 +14,12 @@ import static org.springframework.http.HttpStatus.*;
 @ControllerAdvice
 public class CustomExceptionHandler {
 
+    @ExceptionHandler(AuthenticationException.class)
+    public final ResponseEntity<Object> handleAuthenticationException(AuthenticationException ex) {
+        log.warn("Authentication failed: {}", ex.getMessage());
+        return new ResponseEntity<>(new ErrorResponse(ex.getMessage()), UNAUTHORIZED);
+    }
+
     @ExceptionHandler(NotFoundException.class)
     public final ResponseEntity<Object> handleNotFoundException(NotFoundException ex) {
         return new ResponseEntity<>(new ErrorResponse(ex.getMessage()), NOT_FOUND);
