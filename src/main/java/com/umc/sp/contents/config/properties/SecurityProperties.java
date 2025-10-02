@@ -45,7 +45,8 @@ public class SecurityProperties {
         "/swagger-ui/**",
         "/v3/api-docs/**",
         "/webjars/**",
-        "/favicon.ico"
+        "/favicon.ico",
+        "/sections/**"
     );
     
     /**
@@ -54,7 +55,6 @@ public class SecurityProperties {
      */
     private List<String> protectedEndpoints = List.of(
         "/content/**",
-        "/sections/**",
-        "/internal/**"
+        "/sections/**"
     );
 }

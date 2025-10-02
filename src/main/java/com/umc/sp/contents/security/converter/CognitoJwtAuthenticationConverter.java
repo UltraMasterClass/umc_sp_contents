@@ -1,6 +1,7 @@
 package com.umc.sp.contents.security.converter;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -44,7 +45,7 @@ public class CognitoJwtAuthenticationConverter implements Converter<Jwt, Abstrac
         
         // Extract Cognito groups as authorities
         List<String> cognitoGroups = jwt.getClaimAsStringList("cognito:groups");
-        if (cognitoGroups != null && !cognitoGroups.isEmpty()) {
+        if (CollectionUtils.isNotEmpty(cognitoGroups)) {
             log.debug("Found Cognito groups: {}", cognitoGroups);
             authorities.addAll(
                 cognitoGroups.stream()

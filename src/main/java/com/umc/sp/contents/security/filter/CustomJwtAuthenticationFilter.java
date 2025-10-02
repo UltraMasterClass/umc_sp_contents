@@ -133,10 +133,10 @@ public class CustomJwtAuthenticationFilter extends OncePerRequestFilter {
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("timestamp", LocalDateTime.now().toString());
         errorResponse.put("status", status.value());
-        errorResponse.put("error", status.getReasonPhrase());
+        /*errorResponse.put("error", status.getReasonPhrase());
         errorResponse.put("message", message);
         errorResponse.put("path", SecurityContextHolder.getContext().getAuthentication() != null ? 
-                SecurityContextHolder.getContext().getAuthentication().getName() : "");
+                SecurityContextHolder.getContext().getAuthentication().getName() : "");*/
         
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }
